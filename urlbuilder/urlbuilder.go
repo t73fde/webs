@@ -47,7 +47,7 @@ func (ub *URLBuilder) AddPath(p string) *URLBuilder {
 
 // SetFragment stores the fragment
 func (ub *URLBuilder) SetFragment(frag string) *URLBuilder {
-	ub.fragment = frag
+	ub.fragment = strings.TrimSpace(frag)
 	return ub
 }
 
@@ -82,11 +82,6 @@ func (ub *URLBuilder) String() string {
 		}
 	}
 
-	if ub.fragment != "" {
-		sb.WriteByte('#')
-		sb.WriteString(ub.fragment)
-	}
-
 	for i, q := range ub.query {
 		if i == 0 {
 			sb.WriteByte('?')
@@ -99,5 +94,11 @@ func (ub *URLBuilder) String() string {
 			sb.WriteString(url.QueryEscape(val))
 		}
 	}
+
+	if ub.fragment != "" {
+		sb.WriteByte('#')
+		sb.WriteString(ub.fragment)
+	}
+
 	return sb.String()
 }

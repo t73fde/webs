@@ -14,6 +14,8 @@
 package urlbuilder_test
 
 import (
+	"net/url"
+	"strings"
 	"testing"
 
 	"t73f.de/r/webs/urlbuilder"
@@ -53,20 +55,20 @@ func TestVarURLBuilder(t *testing.T) {
 		return
 	}
 	checkCopy(t, &ub)
-	ub.SetFragment("f")
-	if exp, got := "/path/pf%2Fad/p/#f", ub.String(); exp != got {
-		t.Errorf("URLBuilder.SetFragment2 must result in string value %q, but got %q", exp, got)
-		return
-	}
-	checkCopy(t, &ub)
 	ub.AddQuery("k", "v")
-	if exp, got := "/path/pf%2Fad/p/#f?k=v", ub.String(); exp != got {
+	if exp, got := "/path/pf%2Fad/p/?k=v#frag", ub.String(); exp != got {
 		t.Errorf("URLBuilder.AddQuery must result in string value %q, but got %q", exp, got)
 		return
 	}
 	checkCopy(t, &ub)
+	ub.SetFragment("f")
+	if exp, got := "/path/pf%2Fad/p/?k=v#f", ub.String(); exp != got {
+		t.Errorf("URLBuilder.SetFragment2 must result in string value %q, but got %q", exp, got)
+		return
+	}
+	checkCopy(t, &ub)
 	ub.AddQuery("l", "w")
-	if exp, got := "/path/pf%2Fad/p/#f?k=v&l=w", ub.String(); exp != got {
+	if exp, got := "/path/pf%2Fad/p/?k=v&l=w#f", ub.String(); exp != got {
 		t.Errorf("URLBuilder.AddQuery2 must result in string value %q, but got %q", exp, got)
 		return
 	}
@@ -74,6 +76,12 @@ func TestVarURLBuilder(t *testing.T) {
 	ub.RemoveQueries()
 	if exp, got := "/path/pf%2Fad/p/#f", ub.String(); exp != got {
 		t.Errorf("URLBuilder.RemoveQueries must result in string value %q, but got %q", exp, got)
+		return
+	}
+	checkCopy(t, &ub)
+	ub.SetFragment(" ")
+	if exp, got := "/path/pf%2Fad/p/", ub.String(); exp != got {
+		t.Errorf("URLBuilder.SetFragment3 must result in string value %q, but got %q", exp, got)
 		return
 	}
 	checkCopy(t, &ub)
@@ -100,7 +108,19 @@ func TestVarURLBuilder(t *testing.T) {
 func checkCopy(t *testing.T, ub *urlbuilder.URLBuilder) {
 	var ubCopy urlbuilder.URLBuilder
 	ub.Copy(&ubCopy)
-	if exp, got := ub.String(), ubCopy.String(); got != exp {
+	exp := ub.String()
+	if got := ubCopy.String(); got != exp {
 		t.Errorf("copy of %q shoud not change, but got: %q", exp, got)
+	}
+
+	u, err := url.Parse(exp)
+	if err != nil {
+		t.Errorf("unable to parse as url.URL: %v", err)
+	}
+	if strings.Contains(u.Fragment, "=") {
+		t.Errorf("fragment contains query: %q", u.Fragment)
+	}
+	if got := u.String(); got != exp {
+		t.Errorf("parsed url.URL.String() differ from original, expected: %q, but got: %q", exp, got)
 	}
 }
