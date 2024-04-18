@@ -15,20 +15,24 @@ package urlbuilder
 
 import (
 	"net/url"
+	"slices"
 	"strings"
 )
 
 // URLBuilder helps to build (absolute) URLs.
 type URLBuilder struct {
-	prefix   string
 	path     []string
 	fragment string
 	query    []urlQuery
 }
 type urlQuery struct{ key, val string }
 
-// New creates a new URLBuilder with the given prefix.
-func New(prefix string) *URLBuilder { return &URLBuilder{prefix: prefix} }
+// Copy an URLBuilder.
+func (ub *URLBuilder) Copy(dest *URLBuilder) {
+	dest.path = slices.Clone(ub.path)
+	dest.fragment = ub.fragment
+	dest.query = slices.Clone(ub.query)
+}
 
 // AddPath adds a new path element.
 func (ub *URLBuilder) AddPath(p string) *URLBuilder {
@@ -65,27 +69,9 @@ func (ub *URLBuilder) RemoveQueries() *URLBuilder {
 func (ub *URLBuilder) String() string {
 	var sb strings.Builder
 
-	prefix := ub.prefix
-	if prefix == "/" {
-		prefix = ""
+	if len(ub.path) == 0 {
+		sb.WriteByte('/')
 	}
-	if prefix == "" {
-		if len(ub.path) == 0 {
-			prefix = "/"
-		} else {
-			prefix = ""
-		}
-	} else {
-		if prefix[0] != '/' {
-			prefix = "/" + prefix
-		}
-		if pl := len(prefix); prefix[pl-1] == '/' {
-			prefix = prefix[0 : pl-1]
-		}
-	}
-
-	sb.WriteString(prefix)
-
 	for _, p := range ub.path {
 		sb.WriteByte('/')
 		if pl := len(p); pl > 0 && p[pl-1] == '/' {
