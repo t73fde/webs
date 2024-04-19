@@ -1,0 +1,260 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2024-present Detlef Stern
+//
+// This file is part of webs.
+//
+// webs is licensed under the latest version of the EUPL (European Union Public
+// License. Please see file LICENSE.txt for your rights and obligations under
+// this license.
+//
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2024-present Detlef Stern
+//-----------------------------------------------------------------------------
+
+// Package login provides a mechanism for simple login / logout use cases of web sites.
+package login
+
+import (
+	"context"
+	"crypto/rand"
+	"crypto/sha512"
+	"errors"
+	"fmt"
+	"hash"
+	"io"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"t73f.de/r/webs"
+)
+
+// Provider is an object that handles everything w.r.t authentication.
+// It is the main element to log in / log out.
+type Provider struct {
+	logger *slog.Logger
+	auth   Authenticator
+	sess   SessionManager
+	redir  Redirector
+
+	passlen      int // max length of username and password
+	authlen      int // max length of cookie value
+	cookiePath   string
+	maxCookieAge int
+	secureCookie bool
+
+	UsernameKey string
+	PasswordKey string
+	cookieName  string
+}
+
+// MakeProvider make a new authenticator. Typically, you only need one
+// authenticator for an application.
+func MakeProvider(logger *slog.Logger, auth Authenticator, sess SessionManager, redir Redirector) *Provider {
+	provider := Provider{
+		logger: logger,
+		auth:   auth,
+		sess:   sess,
+		redir:  redir,
+
+		passlen:      127,
+		authlen:      32,
+		cookiePath:   "/", // TODO: should be settable
+		maxCookieAge: 366 * 24 * 3600,
+		secureCookie: false,
+
+		UsernameKey: "username",
+		PasswordKey: "password",
+		cookieName:  "auth",
+	}
+	return &provider
+}
+
+// Authenticator allows to authenticate a human user.
+type Authenticator interface {
+	// Authenticate with the given user name and password, giving some data
+	// about the user.
+	Authenticate(ctx context.Context, username, password string) (UserInfo, error)
+}
+
+var ErrUsernamePassword = errors.New("username and authentication data do not match")
+var ErrTooManyUsers = errors.New("too many users")
+
+// UserInfo given some information about a user, w.r.t. authentication.
+// Other informations must be handled separately.
+type UserInfo struct {
+	UserID   int64  // Unique identifier
+	Username string // Unique user name
+}
+
+// SessionManager handles the set of logged-in users.
+type SessionManager interface {
+	// Associate an user info with an artificial, random session identifier.
+	SetUserAuth(context.Context, UserInfo, string) error
+
+	// Retrieve the user info based on the session identifier.
+	UserAuth(context.Context, string) (UserInfo, error)
+
+	// Remove session. May remove all sessions of the associated user.
+	Remove(context.Context, string) error
+}
+
+var ErrNoSuchSession = errors.New("no such session")
+var ErrTooManySessions = errors.New("too many open sessions")
+
+// Redirector will redirect the user to an appropriate URL.
+type Redirector interface {
+	// Redirect to login page.
+	LoginRedirect(w http.ResponseWriter, r *http.Request)
+
+	// Redirect after a successful login.
+	SuccessRedirect(w http.ResponseWriter, r *http.Request, userinfo UserInfo)
+
+	// Redirect after logout.
+	LogoutRedirect(w http.ResponseWriter, r *http.Request)
+}
+
+// LoginFunc creates a HandlerFunc to execute a POST request from the login web page.
+func (lp *Provider) LoginFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := strings.TrimSpace(r.FormValue(lp.UsernameKey))
+		password := strings.TrimSpace(r.FormValue(lp.PasswordKey))
+
+		if l := lp.passlen; username == "" || len(username) > l || password == "" || len(password) > l {
+			lp.logger.Info("invalid password attempt")
+			lp.loginRedirect(w, r)
+			return
+		}
+
+		ctx := r.Context()
+		userinfo, err := lp.auth.Authenticate(ctx, username, password)
+		if err != nil {
+			lp.logger.Info("login failed", "error", err)
+			lp.loginRedirect(w, r)
+			return
+		}
+
+		hasher := sha512.New512_256()
+		io.CopyN(hasher, rand.Reader, 32)
+		auth := lp.asHex(hasher)
+		lp.setCookie(w, auth)
+
+		hasher.Reset()
+		hasher.Write([]byte(auth))
+		err = lp.sess.SetUserAuth(ctx, userinfo, lp.asHex(hasher))
+		if err != nil {
+			lp.logger.Error("set-session failed", "error", err)
+		} else {
+			lp.logger.Info("Login", "user", userinfo.Username)
+		}
+		lp.redir.SuccessRedirect(w, r, userinfo)
+	}
+}
+func (lp *Provider) loginRedirect(w http.ResponseWriter, r *http.Request) {
+	lp.clearCookie(w)
+	lp.redir.LoginRedirect(w, r)
+}
+
+// LogoutFunc creates a HandlerFunc that executes a logout.
+func (lp *Provider) LogoutFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userinfo, auth, err := lp.checkCookie(r)
+		if err != nil {
+			lp.logger.Info("invalid cookie", "error", err)
+		} else {
+			ctx := r.Context()
+			err = lp.sess.Remove(ctx, auth)
+			if err != nil {
+				lp.logger.Error("unable to remove auth", "error", err)
+			}
+		}
+		lp.clearCookie(w)
+		lp.logger.Info("Logout", "user", userinfo.Username)
+		lp.redir.LogoutRedirect(w, r)
+	}
+}
+
+type userinfoKeytype struct{}
+
+var userinfoKey userinfoKeytype
+
+// EnrichUserInfo creates a FuncMiddleware that retrieves the user info based
+// on the cookie and stores it in the request context.
+//
+// Function GetUserInfo will provide the actual user info for handler functions.
+func (lp *Provider) EnrichUserInfo() webs.FuncMiddleware {
+	return func(handler http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if userinfo, _, err := lp.checkCookie(r); err == nil {
+				ctx := context.WithValue(r.Context(), userinfoKey, &userinfo)
+				r = r.WithContext(ctx)
+			}
+			handler(w, r)
+		}
+	}
+}
+
+// GetUserInfo returns a reference to the actual user info if there is some
+// stored in the request context. Only useful for handler functions that were
+// encapsulated by EnrichUserInfo.
+func GetUserInfo(r *http.Request) *UserInfo {
+	if userinfo, ok := r.Context().Value(userinfoKey).(*UserInfo); ok {
+		return userinfo
+	}
+	return nil
+}
+
+var errInvalidCookie = errors.New("invalid cookie")
+
+func (lp *Provider) checkCookie(r *http.Request) (UserInfo, string, error) {
+	auth := lp.getAuthCookie(r)
+	if auth == "" {
+		return UserInfo{}, "", errInvalidCookie
+	}
+	hasher := sha512.New512_256()
+	hasher.Write([]byte(auth))
+	ctx := r.Context()
+	userinfo, err := lp.sess.UserAuth(ctx, lp.asHex(hasher))
+	return userinfo, auth, err
+}
+
+func (lp *Provider) getAuthCookie(r *http.Request) string {
+	cookie, err := r.Cookie(lp.cookieName)
+	if err != nil {
+		return ""
+	}
+	auth := cookie.Value
+	if len(auth) != lp.authlen {
+		lp.logger.Info("bad authentication", "auth", auth)
+		return ""
+	}
+	return auth
+}
+
+func (lp *Provider) setCookie(w http.ResponseWriter, value string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     lp.cookieName,
+		Value:    value,
+		Path:     lp.cookiePath,
+		MaxAge:   lp.maxCookieAge,
+		Secure:   lp.secureCookie,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func (lp *Provider) clearCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     lp.cookieName,
+		Value:    "",
+		Path:     lp.cookiePath,
+		MaxAge:   -1,
+		Secure:   lp.secureCookie,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func (lp *Provider) asHex(hasher hash.Hash) string {
+	return fmt.Sprintf("%x", hasher.Sum(nil))[0:lp.authlen]
+}
