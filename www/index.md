@@ -3,6 +3,8 @@
 This is a collection of utility functions to build web applications in
 [Go](https://go.dev/).
 
+* `login`: simple password based cookie authentication.
+* `middleware`: functions that transform web handlers.
 * `urlbuilder` creates URLs to be used in HTML.
 
 ## Use instructions

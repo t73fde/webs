@@ -26,7 +26,7 @@ import (
 	"net/http"
 	"strings"
 
-	"t73f.de/r/webs"
+	"t73f.de/r/webs/middleware"
 )
 
 // Provider is an object that handles everything w.r.t authentication.
@@ -182,7 +182,7 @@ var userinfoKey userinfoKeytype
 // on the cookie and stores it in the request context.
 //
 // Function GetUserInfo will provide the actual user info for handler functions.
-func (lp *Provider) EnrichUserInfo() webs.FuncMiddleware {
+func (lp *Provider) EnrichUserInfo() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if userinfo, _, err := lp.checkCookie(r); err == nil {

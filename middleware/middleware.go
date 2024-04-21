@@ -11,10 +11,10 @@
 // SPDX-FileCopyrightText: 2024-present Detlef Stern
 //-----------------------------------------------------------------------------
 
-// Package webs provides some common definitions
-package webs
+// Package middleware provides some net/http middleware.
+package middleware
 
 import "net/http"
 
-// FuncMiddleware is a functions that encapsulates a HandlerFunc.
-type FuncMiddleware func(http.HandlerFunc) http.HandlerFunc
+// Func is a middleware that encapsulates a HandlerFunc.
+type Func func(http.HandlerFunc) http.HandlerFunc
