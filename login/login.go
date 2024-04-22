@@ -178,7 +178,7 @@ type userinfoKeytype struct{}
 
 var userinfoKey userinfoKeytype
 
-// EnrichUserInfo creates a FuncMiddleware that retrieves the user info based
+// EnrichUserInfo creates a middleware.Func that retrieves the user info based
 // on the cookie and stores it in the request context.
 //
 // Function GetUserInfo will provide the actual user info for handler functions.
@@ -190,6 +190,28 @@ func (lp *Provider) EnrichUserInfo() middleware.Func {
 				r = r.WithContext(ctx)
 			}
 			handler(w, r)
+		}
+	}
+}
+
+// Required creates a middleware.Func that ensures a logged-in user. Otherwise
+// the anonymous user is redirected to the login page.
+//
+// Required implies EnrichUserInfo, i.e. there is no need to wrap a handler
+// function with EnrichUserInfo.
+//
+// Function GetUserInfo can be used to retrieve the actual user inside a
+// handler function.
+func (lp *Provider) Required() middleware.Func {
+	return func(handler http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if userinfo, _, err := lp.checkCookie(r); err == nil {
+				ctx := context.WithValue(r.Context(), userinfoKey, &userinfo)
+				r = r.WithContext(ctx)
+				handler(w, r)
+			} else {
+				lp.loginRedirect(w, r)
+			}
 		}
 	}
 }
