@@ -25,14 +25,14 @@ type RAMSessions struct {
 	sessions map[string]*sessionData
 }
 type sessionData struct {
-	UserInfo
+	user    UserInfo
 	expires time.Time
 }
 
 func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth string) error {
 	session := sessionData{
-		UserInfo: userinfo,
-		expires:  time.Now().Add(7 * 24 * time.Hour),
+		user:    userinfo,
+		expires: time.Now().Add(7 * 24 * time.Hour),
 	}
 
 	rs.mx.Lock()
@@ -58,17 +58,17 @@ func (rs *RAMSessions) UserAuth(_ context.Context, auth string) (UserInfo, error
 		session, found = rs.sessions[auth]
 	}
 	if !found || session == nil {
-		return UserInfo{}, ErrNoSuchSession
+		return nil, ErrNoSuchSession
 	}
 	now := time.Now()
 	if now.After(session.expires) {
 		delete(rs.sessions, auth)
-		return UserInfo{}, ErrNoSuchSession
+		return nil, ErrNoSuchSession
 	}
 	if session.expires.Before(now.Add(3 * 24 * time.Hour)) {
 		session.expires = now.Add(7 * 24 * time.Hour)
 	}
-	return session.UserInfo, nil
+	return session.user, nil
 }
 
 func (rs *RAMSessions) Remove(_ context.Context, auth string) error {

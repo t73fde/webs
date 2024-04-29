@@ -77,14 +77,13 @@ type Authenticator interface {
 	Authenticate(ctx context.Context, username, password string) (UserInfo, error)
 }
 
-var ErrUsernamePassword = errors.New("username and authentication data do not match")
+var ErrUsernamePassword = errors.New("username and password do not match")
 var ErrTooManyUsers = errors.New("too many users")
 
-// UserInfo given some information about a user, w.r.t. authentication.
-// Other informations must be handled separately.
-type UserInfo struct {
-	UserID   int64  // Unique identifier
-	Username string // Unique user name
+// UserInfo gives some information about a user, w.r.t. authentication.
+// Other data must be handled separately.
+type UserInfo interface {
+	Name() string // Unique user name
 }
 
 // SessionManager handles the set of logged-in users.
@@ -105,13 +104,13 @@ var ErrTooManySessions = errors.New("too many open sessions")
 // Redirector will redirect the user to an appropriate URL.
 type Redirector interface {
 	// Redirect to login page.
-	LoginRedirect(w http.ResponseWriter, r *http.Request)
+	LoginRedirect(http.ResponseWriter, *http.Request)
 
 	// Redirect after a successful login.
-	SuccessRedirect(w http.ResponseWriter, r *http.Request, userinfo UserInfo)
+	SuccessRedirect(http.ResponseWriter, *http.Request, UserInfo)
 
 	// Redirect after logout.
-	LogoutRedirect(w http.ResponseWriter, r *http.Request)
+	LogoutRedirect(http.ResponseWriter, *http.Request)
 }
 
 // LoginFunc creates a HandlerFunc to execute a POST request from the login web page.
@@ -145,7 +144,7 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 		if err != nil {
 			lp.logger.Error("set-session failed", "error", err)
 		} else {
-			lp.logger.Info("Login", "user", userinfo.Username)
+			lp.logger.Info("Login", "user", userinfo.Name())
 		}
 		lp.redir.SuccessRedirect(w, r, userinfo)
 	}
@@ -169,7 +168,7 @@ func (lp *Provider) LogoutFunc() http.HandlerFunc {
 			}
 		}
 		lp.clearCookie(w)
-		lp.logger.Info("Logout", "user", userinfo.Username)
+		lp.logger.Info("Logout", "user", userinfo.Name())
 		lp.redir.LogoutRedirect(w, r)
 	}
 }
@@ -181,12 +180,12 @@ var userinfoKey userinfoKeytype
 // EnrichUserInfo creates a middleware.Func that retrieves the user info based
 // on the cookie and stores it in the request context.
 //
-// Function GetUserInfo will provide the actual user info for handler functions.
+// Function User() will provide the actual user info for handler functions.
 func (lp *Provider) EnrichUserInfo() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if userinfo, _, err := lp.checkCookie(r); err == nil {
-				ctx := context.WithValue(r.Context(), userinfoKey, &userinfo)
+				ctx := context.WithValue(r.Context(), userinfoKey, userinfo)
 				r = r.WithContext(ctx)
 			}
 			handler(w, r)
@@ -200,13 +199,13 @@ func (lp *Provider) EnrichUserInfo() middleware.Func {
 // Required implies EnrichUserInfo, i.e. there is no need to wrap a handler
 // function with EnrichUserInfo.
 //
-// Function GetUserInfo can be used to retrieve the actual user inside a
+// Function User() can be used to retrieve the actual user inside a
 // handler function.
 func (lp *Provider) Required() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if userinfo, _, err := lp.checkCookie(r); err == nil {
-				ctx := context.WithValue(r.Context(), userinfoKey, &userinfo)
+				ctx := context.WithValue(r.Context(), userinfoKey, userinfo)
 				r = r.WithContext(ctx)
 				handler(w, r)
 			} else {
@@ -216,14 +215,14 @@ func (lp *Provider) Required() middleware.Func {
 	}
 }
 
-// GetUserInfo returns a reference to the actual user info if there is some
+// User returns a reference to the actual user info if there is some
 // stored in the request context. Only useful for handler functions that were
 // encapsulated by EnrichUserInfo.
-func GetUserInfo(r *http.Request) *UserInfo {
-	if userinfo, ok := r.Context().Value(userinfoKey).(*UserInfo); ok {
-		return userinfo
+func User(r *http.Request) (UserInfo, bool) {
+	if userinfo, ok := r.Context().Value(userinfoKey).(UserInfo); ok {
+		return userinfo, true
 	}
-	return nil
+	return nil, false
 }
 
 var errInvalidCookie = errors.New("invalid cookie")
@@ -231,7 +230,7 @@ var errInvalidCookie = errors.New("invalid cookie")
 func (lp *Provider) checkCookie(r *http.Request) (UserInfo, string, error) {
 	auth := lp.getAuthCookie(r)
 	if auth == "" {
-		return UserInfo{}, "", errInvalidCookie
+		return nil, "", errInvalidCookie
 	}
 	hasher := sha512.New512_256()
 	hasher.Write([]byte(auth))
@@ -260,7 +259,7 @@ func (lp *Provider) setCookie(w http.ResponseWriter, value string) {
 		Path:     lp.cookiePath,
 		MaxAge:   lp.maxCookieAge,
 		Secure:   lp.secureCookie,
-		HttpOnly: true,
+		HttpOnly: true, // TODO: "false" possibly needed for htmx
 		SameSite: http.SameSiteLaxMode,
 	})
 }

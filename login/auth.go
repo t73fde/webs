@@ -22,37 +22,41 @@ import (
 type NoAuthenticator struct{}
 
 func (*NoAuthenticator) Authenticate(context.Context, string, string) (UserInfo, error) {
-	return UserInfo{}, ErrUsernamePassword
+	return nil, ErrUsernamePassword
 }
 
 // TestAuthenticator is an Authenticator for testing purposes.
 type TestAuthenticator struct {
 	mx    sync.Mutex // protect the following map
-	names map[string]UserInfo
+	names map[string]testUserInfo
 }
+
+type testUserInfo string
+
+func (u testUserInfo) Name() string { return string(u) }
 
 func (ta *TestAuthenticator) Authenticate(_ context.Context, username, password string) (UserInfo, error) {
 	if username[0] == 'x' {
-		return UserInfo{}, ErrUsernamePassword
+		return nil, ErrUsernamePassword
 	}
 	if username[0] == 'q' && username != password {
-		return UserInfo{}, ErrUsernamePassword
+		return nil, ErrUsernamePassword
 	}
 	ta.mx.Lock()
 	defer ta.mx.Unlock()
 
 	lenNames := len(ta.names)
 	if lenNames == 0 {
-		userinfo := UserInfo{UserID: 0, Username: username}
-		ta.names = map[string]UserInfo{username: userinfo}
+		userinfo := testUserInfo(username)
+		ta.names = map[string]testUserInfo{username: userinfo}
 		return userinfo, nil
 	}
 	if userinfo, found := ta.names[username]; found {
 		return userinfo, nil
 	}
 	if lenNames > 1024 {
-		return UserInfo{}, ErrTooManyUsers
+		return nil, ErrTooManyUsers
 	}
-	userinfo := UserInfo{UserID: int64(lenNames), Username: username}
+	userinfo := testUserInfo(username)
 	return userinfo, nil
 }
