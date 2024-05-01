@@ -136,7 +136,7 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 		hasher := sha512.New512_256()
 		io.CopyN(hasher, rand.Reader, 32)
 		auth := lp.asHex(hasher)
-		lp.setCookie(w, auth)
+		lp.setAuthCookie(w, auth)
 
 		hasher.Reset()
 		hasher.Write([]byte(auth))
@@ -150,7 +150,7 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 	}
 }
 func (lp *Provider) loginRedirect(w http.ResponseWriter, r *http.Request) {
-	lp.clearCookie(w)
+	lp.clearAuthCookie(w)
 	lp.redir.LoginRedirect(w, r)
 }
 
@@ -167,7 +167,7 @@ func (lp *Provider) LogoutFunc() http.HandlerFunc {
 				lp.logger.Error("unable to remove auth", "error", err)
 			}
 		}
-		lp.clearCookie(w)
+		lp.clearAuthCookie(w)
 		lp.logger.Info("Logout", "user", userinfo.Name())
 		lp.redir.LogoutRedirect(w, r)
 	}
@@ -228,14 +228,15 @@ func User(ctx context.Context) (UserInfo, bool) {
 var errInvalidCookie = errors.New("invalid cookie")
 
 func (lp *Provider) checkCookie(r *http.Request) (UserInfo, string, error) {
-	auth := lp.getAuthCookie(r)
-	if auth == "" {
+	cookie := lp.getAuthCookie(r)
+	if cookie == "" {
 		return nil, "", errInvalidCookie
 	}
 	hasher := sha512.New512_256()
-	hasher.Write([]byte(auth))
+	hasher.Write([]byte(cookie))
+	auth := lp.asHex(hasher)
 	ctx := r.Context()
-	userinfo, err := lp.sess.UserAuth(ctx, lp.asHex(hasher))
+	userinfo, err := lp.sess.UserAuth(ctx, auth)
 	return userinfo, auth, err
 }
 
@@ -252,7 +253,7 @@ func (lp *Provider) getAuthCookie(r *http.Request) string {
 	return auth
 }
 
-func (lp *Provider) setCookie(w http.ResponseWriter, value string) {
+func (lp *Provider) setAuthCookie(w http.ResponseWriter, value string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     lp.cookieName,
 		Value:    value,
@@ -264,7 +265,7 @@ func (lp *Provider) setCookie(w http.ResponseWriter, value string) {
 	})
 }
 
-func (lp *Provider) clearCookie(w http.ResponseWriter) {
+func (lp *Provider) clearAuthCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     lp.cookieName,
 		Value:    "",
