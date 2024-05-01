@@ -218,8 +218,8 @@ func (lp *Provider) Required() middleware.Func {
 // User returns a reference to the actual user info if there is some
 // stored in the request context. Only useful for handler functions that were
 // encapsulated by EnrichUserInfo.
-func User(r *http.Request) (UserInfo, bool) {
-	if userinfo, ok := r.Context().Value(userinfoKey).(UserInfo); ok {
+func User(ctx context.Context) (UserInfo, bool) {
+	if userinfo, ok := ctx.Value(userinfoKey).(UserInfo); ok {
 		return userinfo, true
 	}
 	return nil, false
