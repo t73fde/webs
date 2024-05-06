@@ -15,6 +15,7 @@ package login
 
 import (
 	"context"
+	"strconv"
 	"sync"
 )
 
@@ -28,12 +29,16 @@ func (*NoAuthenticator) Authenticate(context.Context, string, string) (UserInfo,
 // TestAuthenticator is an Authenticator for testing purposes.
 type TestAuthenticator struct {
 	mx    sync.Mutex // protect the following map
-	names map[string]testUserInfo
+	names map[string]*testUserInfo
 }
 
-type testUserInfo string
+type testUserInfo struct {
+	name string
+	sess string
+}
 
-func (u testUserInfo) Name() string { return string(u) }
+func (u *testUserInfo) Name() string      { return u.name }
+func (u *testUserInfo) SessionID() string { return u.sess }
 
 func (ta *TestAuthenticator) Authenticate(_ context.Context, username, password string) (UserInfo, error) {
 	if username[0] == 'x' {
@@ -47,8 +52,8 @@ func (ta *TestAuthenticator) Authenticate(_ context.Context, username, password 
 
 	lenNames := len(ta.names)
 	if lenNames == 0 {
-		userinfo := testUserInfo(username)
-		ta.names = map[string]testUserInfo{username: userinfo}
+		userinfo := &testUserInfo{name: username, sess: "1"}
+		ta.names = map[string]*testUserInfo{username: userinfo}
 		return userinfo, nil
 	}
 	if userinfo, found := ta.names[username]; found {
@@ -57,6 +62,6 @@ func (ta *TestAuthenticator) Authenticate(_ context.Context, username, password 
 	if lenNames > 1024 {
 		return nil, ErrTooManyUsers
 	}
-	userinfo := testUserInfo(username)
+	userinfo := &testUserInfo{name: username, sess: strconv.Itoa(lenNames + 1)}
 	return userinfo, nil
 }

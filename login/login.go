@@ -83,7 +83,11 @@ var ErrTooManyUsers = errors.New("too many users")
 // UserInfo gives some information about a user, w.r.t. authentication.
 // Other data must be handled separately.
 type UserInfo interface {
-	Name() string // Unique user name
+	// Unique user name
+	Name() string
+
+	// Session that authorized the user. Could be the empty string.
+	SessionID() string
 }
 
 // SessionManager handles the set of logged-in users.
@@ -140,12 +144,13 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 
 		hasher.Reset()
 		hasher.Write([]byte(auth))
-		err = lp.sess.SetUserAuth(ctx, userinfo, lp.asHex(hasher))
-		if err != nil {
+		if err = lp.sess.SetUserAuth(ctx, userinfo, lp.asHex(hasher)); err != nil {
 			lp.logger.Error("set-session failed", "error", err)
-		} else {
-			lp.logger.Info("Login", "user", userinfo.Name())
+			lp.redir.LoginRedirect(w, r)
+			return
 		}
+		lp.logger.Info("Login", "user", userinfo.Name())
+		r = r.WithContext(setUser(ctx, userinfo))
 		lp.redir.SuccessRedirect(w, r, userinfo)
 	}
 }
@@ -166,9 +171,9 @@ func (lp *Provider) LogoutFunc() http.HandlerFunc {
 			if err != nil {
 				lp.logger.Error("unable to remove auth", "error", err)
 			}
+			lp.logger.Info("Logout", "user", userinfo.Name())
 		}
 		lp.clearAuthCookie(w)
-		lp.logger.Info("Logout", "user", userinfo.Name())
 		lp.redir.LogoutRedirect(w, r)
 	}
 }
@@ -176,6 +181,10 @@ func (lp *Provider) LogoutFunc() http.HandlerFunc {
 type userinfoKeytype struct{}
 
 var userinfoKey userinfoKeytype
+
+func setUser(ctx context.Context, userinfo UserInfo) context.Context {
+	return context.WithValue(ctx, userinfoKey, userinfo)
+}
 
 // EnrichUserInfo creates a middleware.Func that retrieves the user info based
 // on the cookie and stores it in the request context.
@@ -185,7 +194,7 @@ func (lp *Provider) EnrichUserInfo() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if userinfo, _, err := lp.checkCookie(r); err == nil {
-				ctx := context.WithValue(r.Context(), userinfoKey, userinfo)
+				ctx := setUser(r.Context(), userinfo)
 				r = r.WithContext(ctx)
 			}
 			handler(w, r)
@@ -205,7 +214,7 @@ func (lp *Provider) Required() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if userinfo, _, err := lp.checkCookie(r); err == nil {
-				ctx := context.WithValue(r.Context(), userinfoKey, userinfo)
+				ctx := setUser(r.Context(), userinfo)
 				r = r.WithContext(ctx)
 				handler(w, r)
 			} else {
