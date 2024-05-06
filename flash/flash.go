@@ -38,7 +38,7 @@ type Flasher interface {
 
 type memoryFlasher struct {
 	mx       sync.Mutex
-	sessions map[string]*memMessages
+	sessions map[login.SessionID]*memMessages
 }
 type memMessages struct {
 	messages map[string][]string
@@ -46,15 +46,15 @@ type memMessages struct {
 }
 
 func MakeMemoryFlasher() Flasher {
-	return &memoryFlasher{sessions: make(map[string]*memMessages, 128)}
+	return &memoryFlasher{sessions: make(map[login.SessionID]*memMessages, 128)}
 }
 
 func (mf *memoryFlasher) Add(ctx context.Context, key, message string) {
-	user, hasUser := login.User(ctx)
-	if !hasUser {
+	session := login.Session(ctx)
+	if session == nil {
 		return
 	}
-	sessid := user.SessionID()
+	sessid := session.SessionID
 	if sessid == "" {
 		return
 	}
@@ -83,11 +83,11 @@ func (mf *memoryFlasher) Add(ctx context.Context, key, message string) {
 }
 
 func (mf *memoryFlasher) Messages(ctx context.Context) map[string][]string {
-	user, found := login.User(ctx)
-	if !found {
+	session := login.Session(ctx)
+	if session == nil {
 		return nil
 	}
-	sessid := user.SessionID()
+	sessid := session.SessionID
 	if sessid == "" {
 		return nil
 	}

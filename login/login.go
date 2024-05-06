@@ -85,21 +85,26 @@ var ErrTooManyUsers = errors.New("too many users")
 type UserInfo interface {
 	// Unique user name
 	Name() string
-
-	// Session that authorized the user. Could be the empty string.
-	SessionID() string
 }
+
+type (
+	SessionInfo struct {
+		SessionID SessionID
+		User      UserInfo
+	}
+	SessionID string
+)
 
 // SessionManager handles the set of logged-in users.
 type SessionManager interface {
-	// Associate an user info with an artificial, random session identifier.
-	SetUserAuth(context.Context, UserInfo, string) error
+	// Associate an user info with a session identifier.
+	SetUserAuth(context.Context, UserInfo, SessionID) error
 
 	// Retrieve the user info based on the session identifier.
-	UserAuth(context.Context, string) (UserInfo, error)
+	UserAuth(context.Context, SessionID) (UserInfo, error)
 
 	// Remove session. May remove all sessions of the associated user.
-	Remove(context.Context, string) error
+	Remove(context.Context, SessionID) error
 }
 
 var ErrNoSuchSession = errors.New("no such session")
@@ -144,13 +149,14 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 
 		hasher.Reset()
 		hasher.Write([]byte(auth))
-		if err = lp.sess.SetUserAuth(ctx, userinfo, lp.asHex(hasher)); err != nil {
+		sessid := SessionID(lp.asHex(hasher))
+		if err = lp.sess.SetUserAuth(ctx, userinfo, sessid); err != nil {
 			lp.logger.Error("set-session failed", "error", err)
 			lp.redir.LoginRedirect(w, r)
 			return
 		}
 		lp.logger.Info("Login", "user", userinfo.Name())
-		r = r.WithContext(setUser(ctx, userinfo))
+		r = r.WithContext(setSession(ctx, &SessionInfo{SessionID: sessid, User: userinfo}))
 		lp.redir.SuccessRedirect(w, r, userinfo)
 	}
 }
@@ -178,12 +184,12 @@ func (lp *Provider) LogoutFunc() http.HandlerFunc {
 	}
 }
 
-type userinfoKeytype struct{}
+type sessionKeytype struct{}
 
-var userinfoKey userinfoKeytype
+var sessionKey sessionKeytype
 
-func setUser(ctx context.Context, userinfo UserInfo) context.Context {
-	return context.WithValue(ctx, userinfoKey, userinfo)
+func setSession(ctx context.Context, session *SessionInfo) context.Context {
+	return context.WithValue(ctx, sessionKey, session)
 }
 
 // EnrichUserInfo creates a middleware.Func that retrieves the user info based
@@ -193,8 +199,8 @@ func setUser(ctx context.Context, userinfo UserInfo) context.Context {
 func (lp *Provider) EnrichUserInfo() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if userinfo, _, err := lp.checkCookie(r); err == nil {
-				ctx := setUser(r.Context(), userinfo)
+			if userinfo, sessid, err := lp.checkCookie(r); err == nil {
+				ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
 				r = r.WithContext(ctx)
 			}
 			handler(w, r)
@@ -213,8 +219,8 @@ func (lp *Provider) EnrichUserInfo() middleware.Func {
 func (lp *Provider) Required() middleware.Func {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if userinfo, _, err := lp.checkCookie(r); err == nil {
-				ctx := setUser(r.Context(), userinfo)
+			if userinfo, sessid, err := lp.checkCookie(r); err == nil {
+				ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
 				r = r.WithContext(ctx)
 				handler(w, r)
 			} else {
@@ -224,26 +230,25 @@ func (lp *Provider) Required() middleware.Func {
 	}
 }
 
-// User returns a reference to the actual user info if there is some
-// stored in the request context. Only useful for handler functions that were
-// encapsulated by EnrichUserInfo.
-func User(ctx context.Context) (UserInfo, bool) {
-	if userinfo, ok := ctx.Value(userinfoKey).(UserInfo); ok {
-		return userinfo, true
+// Session returns a reference to the current user session, or nil if there is
+// no session.
+func Session(ctx context.Context) *SessionInfo {
+	if session, ok := ctx.Value(sessionKey).(*SessionInfo); ok {
+		return session
 	}
-	return nil, false
+	return nil
 }
 
 var errInvalidCookie = errors.New("invalid cookie")
 
-func (lp *Provider) checkCookie(r *http.Request) (UserInfo, string, error) {
+func (lp *Provider) checkCookie(r *http.Request) (UserInfo, SessionID, error) {
 	cookie := lp.getAuthCookie(r)
 	if cookie == "" {
 		return nil, "", errInvalidCookie
 	}
 	hasher := sha512.New512_256()
 	hasher.Write([]byte(cookie))
-	auth := lp.asHex(hasher)
+	auth := SessionID(lp.asHex(hasher))
 	ctx := r.Context()
 	userinfo, err := lp.sess.UserAuth(ctx, auth)
 	return userinfo, auth, err
