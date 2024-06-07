@@ -11,9 +11,9 @@
 // SPDX-FileCopyrightText: 2023-present Detlef Stern
 // -----------------------------------------------------------------------------
 
-// Package key provides a generic key to be used both as an URI element and as a
-// primary key in a database.
-package key
+// Package extkey provides a generic key to be used both as an URI element and
+// as a primary key in a database.
+package extkey
 
 import (
 	"fmt"
@@ -79,10 +79,10 @@ func Parse(s string) (Key, error) {
 }
 
 // IsInvalid returns true if the key is definitely an invalid key.
-func (extkey Key) IsInvalid() bool { return extkey == Invalid }
+func (key Key) IsInvalid() bool { return key == Invalid }
 
 // IsValid returns true if the key is definitely an invalid key.
-func (extkey Key) IsValid() bool { return extkey != Invalid }
+func (key Key) IsValid() bool { return key != Invalid }
 
 var decode32map = [...]int8{
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1, // 0x30 .. 0x3f
@@ -93,25 +93,17 @@ var decode32map = [...]int8{
 }
 
 // Time returns the timestamp value, when the key was generated.
-func (pk Key) Time() time.Time {
-	return time.UnixMilli(int64(pk>>randomBits) + epochAdjust)
-}
-
-// ID returns the application defined part of the key.
-func (pk Key) ID(appBits uint) uint {
-	if appBits == 0 || appBits > MaxAppBits {
-		return 0
-	}
-	return uint((pk & 0x3fffff) >> (randomBits - appBits))
+func (key Key) Time() time.Time {
+	return time.UnixMilli(int64(key>>randomBits) + epochAdjust)
 }
 
 // String returns a base-32 representation of the key as a string.
 // It contains at most 13 characters.
-func (pk Key) String() string {
-	if pk == 0 {
+func (key Key) String() string {
+	if key == 0 {
 		return "0"
 	}
-	u64 := uint64(pk)
+	u64 := uint64(key)
 	temp := [13]byte{}
 	tpos := 0
 	for u64 > 0 {
@@ -155,37 +147,45 @@ func NewGenerator(appBits uint) Generator {
 // Its value is time.Date(2024, time.June, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
 const epochAdjust = 1717200000000
 
-// Make builds a new Key.
-func (kg *Generator) Make(appId uint) Key {
-	if appId > 0 && appId >= kg.appMax {
-		panic(fmt.Errorf("application value out of range: %v (max: %v)", appId, kg.appMax))
+// Create generates a new key with the given application data.
+func (gen *Generator) Create(appId uint) Key {
+	if appId > 0 && appId >= gen.appMax {
+		panic(fmt.Errorf("application value out of range: %v (max: %v)", appId, gen.appMax))
 	}
 	for {
 		milli := uint64(time.Now().UnixMilli())
 		var seq uint64
 
-		kg.mx.Lock()
-		if milli > kg.lastTS {
-			kg.lastTS = milli
-			kg.nextSeq = 1
+		gen.mx.Lock()
+		if milli > gen.lastTS {
+			gen.lastTS = milli
+			gen.nextSeq = 1
 			seq = 0
 		} else {
-			seq = kg.nextSeq
-			kg.nextSeq++
+			seq = gen.nextSeq
+			gen.nextSeq++
 		}
-		kg.mx.Unlock()
+		gen.mx.Unlock()
 
-		if seq < (1 << (randomBits - kg.appBits)) {
+		if seq < (1 << (randomBits - gen.appBits)) {
 			ts := milli - epochAdjust
 			if ts > maxTimeStamp {
 				panic(fmt.Sprintf("timestamp %v exceeds largest possible value %v", ts, maxTimeStamp))
 			}
 
 			// 42bit=ts, kg.intBits=appId, 22-kg.intBits=seq
-			k := (ts << randomBits) | (uint64(appId) << (randomBits - kg.appBits)) | seq
+			k := (ts << randomBits) | (uint64(appId) << (randomBits - gen.appBits)) | seq
 			return Key(k)
 		}
 
 		time.Sleep(1 * time.Millisecond)
 	}
+}
+
+// AppID returns the application defined part of the key.
+func (gen *Generator) AppID(key Key) uint {
+	if appBits := gen.appBits; appBits > 0 {
+		return uint((key & 0x3fffff) >> (randomBits - appBits))
+	}
+	return 0
 }

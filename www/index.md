@@ -3,7 +3,8 @@
 This is a collection of utility functions to build web applications in
 [Go](https://go.dev/).
 
-* [key](/dir?ci=tip&name=key): flexible key type to be used as an external key (e.g. URI path element), and as a database (primary) key.
+* [extkey](/dir?ci=tip&name=extkey): flexible key type to be used as an external key (e.g. URI path element), and as a database (primary) key.
+* [flash](/dir?ci=tip&name=flash): display application defined messages on next web page.
 * [login](/dir?ci=tip&name=login): simple password based cookie authentication.
 * [middleware](/dir?ci=tip&name=middleware): functions that transform web handlers.
 * [urlbuilder](/dir?ci=tip&name=urlbuilder) creates URLs to be used in HTML.

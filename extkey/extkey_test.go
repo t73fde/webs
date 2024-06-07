@@ -11,7 +11,7 @@
 // SPDX-FileCopyrightText: 2023-present Detlef Stern
 // -----------------------------------------------------------------------------
 
-package key_test
+package extkey_test
 
 import (
 	"math"
@@ -20,12 +20,12 @@ import (
 	"strings"
 	"testing"
 
-	"t73f.de/r/webs/key"
+	"t73f.de/r/webs/extkey"
 )
 
 func TestKeyString(t *testing.T) {
 	var testcases = []struct {
-		key key.Key
+		key extkey.Key
 		exp string
 	}{
 		{0, "0"},
@@ -38,7 +38,7 @@ func TestKeyString(t *testing.T) {
 			if got != tc.exp {
 				t.Errorf("%q expected, but got %q", tc.exp, got)
 			}
-			key, err := key.Parse(got)
+			key, err := extkey.Parse(got)
 			if err != nil {
 				panic(err)
 			}
@@ -50,58 +50,52 @@ func TestKeyString(t *testing.T) {
 }
 
 func TestGenerator(t *testing.T) {
-	var generator key.Generator
-	var lastKey key.Key
+	var generator extkey.Generator
+	var lastKey extkey.Key
 
 	for i := 0; i < 1000000; i++ {
-		k := generator.Make(0)
-		if k <= lastKey {
-			t.Errorf("key does not increase: %v -> %v", lastKey, k)
+		key := generator.Create(0)
+		if key <= lastKey {
+			t.Errorf("key does not increase: %v -> %v", lastKey, key)
 			return
 		}
-		lastKey = k
-		checkParse(t, k)
+		lastKey = key
+		checkParse(t, key)
 	}
 }
 
-func checkParse(t *testing.T, k key.Key) {
-	s := k.String()
-	parsedKey, err := key.Parse(s)
+func checkParse(t *testing.T, key extkey.Key) {
+	s := key.String()
+	parsedKey, err := extkey.Parse(s)
 	if err != nil {
 		panic(err)
 	}
-	if parsedKey != k {
-		t.Errorf("key %d/%q was parsed, but got %d/%v", k, s, parsedKey, parsedKey)
+	if parsedKey != key {
+		t.Errorf("key %d/%q was parsed, but got %d/%v", key, s, parsedKey, parsedKey)
 	}
 }
 
 func TestKeyID(t *testing.T) {
-	for intBits := uint(0); intBits <= key.MaxAppBits; intBits++ {
+	for intBits := uint(0); intBits <= extkey.MaxAppBits; intBits++ {
 		maxID := int32(1 << intBits)
-		generator := key.NewGenerator(intBits)
+		generator := extkey.NewGenerator(intBits)
 		for i := 0; i < 512; i++ {
 			exp := uint(rand.Int31n(maxID))
-			k := generator.Make(exp)
-			got := k.ID(intBits)
+			key := generator.Create(exp)
+			got := generator.AppID(key)
 			if got != exp {
-				t.Errorf("id of %v should be %d, but got %d", k, exp, got)
+				t.Errorf("id of %v should be %d, but got %d", key, exp, got)
 			}
 
-			checkParse(t, k)
+			checkParse(t, key)
 		}
 	}
 }
 
 func TestKeyID2(t *testing.T) {
-	var k key.Key
-	if k.IsValid() {
-		t.Errorf("key %v/%d is not invalid, but should be", k, k)
-	}
-	for intBits := uint(0); intBits <= key.MaxAppBits; intBits++ {
-		got := k.ID(intBits)
-		if got != 0 {
-			t.Errorf("%v.ID() should be 0, but is %d", k, got)
-		}
+	var key extkey.Key
+	if key.IsValid() {
+		t.Errorf("key %v/%d is not invalid, but should be", key, key)
 	}
 }
 
@@ -109,7 +103,7 @@ func TestParseKey(t *testing.T) {
 	var testcases = []struct {
 		s   string
 		r   int
-		exp key.Key
+		exp extkey.Key
 	}{
 		{"0000000000000", 0, 0},
 		{"00-000-000-00-000", 0, 0},
@@ -128,7 +122,7 @@ func TestParseKey(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.s, func(t *testing.T) {
-			got, err := key.Parse(tc.s)
+			got, err := extkey.Parse(tc.s)
 			if err != nil {
 				switch tc.r {
 				case 0:

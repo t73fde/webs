@@ -143,7 +143,7 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 		}
 
 		hasher := sha512.New512_256()
-		io.CopyN(hasher, rand.Reader, 32)
+		_, _ = io.CopyN(hasher, rand.Reader, 32)
 		auth := lp.asHex(hasher)
 		lp.setAuthCookie(w, auth)
 

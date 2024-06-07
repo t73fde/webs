@@ -11,26 +11,26 @@
 // SPDX-FileCopyrightText: 2023-present Detlef Stern
 // -----------------------------------------------------------------------------
 
-package key_test
+package extkey_test
 
 import (
 	"testing"
 
-	"t73f.de/r/webs/key"
+	"t73f.de/r/webs/extkey"
 )
 
 func BenchmarkSnowflake(b *testing.B) {
-	var generator key.Generator
+	var generator extkey.Generator
 
 	for i := 0; i < b.N; i++ {
-		generator.Make(0)
+		generator.Create(0)
 	}
 }
 func BenchmarkSnowflakeX(b *testing.B) {
 	bits := 7
-	generator := key.NewGenerator(uint(bits))
+	generator := extkey.NewGenerator(uint(bits))
 	key := uint((1 << bits) - 1)
 	for i := 0; i < b.N; i++ {
-		generator.Make(key)
+		generator.Create(key)
 	}
 }
