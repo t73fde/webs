@@ -189,3 +189,8 @@ func (gen *Generator) AppID(key Key) uint {
 	}
 	return 0
 }
+
+// KeySeq returns the sequence number of the given key.
+func (gen *Generator) KeySeq(key Key) uint {
+	return uint((key & 0x3fffff)) & (1<<(randomBits-gen.appBits) - 1)
+}
