@@ -23,8 +23,29 @@ import (
 
 func TestVarURLBuilder(t *testing.T) {
 	t.Parallel()
-	var ub urlbuilder.URLBuilder
 
+	var ub2 urlbuilder.URLBuilder
+	ub2.AddPath("")
+	if exp, got := "/", ub2.String(); exp != got {
+		t.Errorf("empty path builder must result in string value %q, but got %q", exp, got)
+		return
+	}
+	checkCopy(t, &ub2)
+	ub2.AddPath("path")
+	if exp, got := "/", ub2.String(); exp != got {
+		t.Errorf("empty path builder must result in string value %q, but got %q", exp, got)
+		return
+	}
+	checkCopy(t, &ub2)
+	var ub3 urlbuilder.URLBuilder
+	ub3.AddPath("path").AddPath("")
+	if exp, got := "/path/", ub3.String(); exp != got {
+		t.Errorf("URLBuilder.AddPath/DIR must result in string value %q, but got %q", exp, got)
+		return
+	}
+	checkCopy(t, &ub3)
+
+	var ub urlbuilder.URLBuilder
 	checkCopy(t, &ub)
 	if exp, got := "/", ub.String(); exp != got {
 		t.Errorf("empty URLBuilder must result in string value %q, but got %q", exp, got)

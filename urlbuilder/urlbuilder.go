@@ -36,10 +36,15 @@ func (ub *URLBuilder) Copy(dest *URLBuilder) {
 
 // AddPath adds a new path element.
 func (ub *URLBuilder) AddPath(p string) *URLBuilder {
+	if pl := len(ub.path); pl > 0 && ub.path[pl-1] == "/" {
+		return ub
+	}
 	for len(p) > 0 && p[0] == '/' {
 		p = p[1:]
 	}
-	if p != "" {
+	if p == "" {
+		ub.path = append(ub.path, "/")
+	} else {
 		ub.path = append(ub.path, p)
 	}
 	return ub
@@ -69,16 +74,20 @@ func (ub *URLBuilder) RemoveQueries() *URLBuilder {
 func (ub *URLBuilder) String() string {
 	var sb strings.Builder
 
-	if len(ub.path) == 0 {
+	if len(ub.path) == 0 || ub.path[0] == "/" {
 		sb.WriteByte('/')
-	}
-	for _, p := range ub.path {
-		sb.WriteByte('/')
-		if pl := len(p); pl > 0 && p[pl-1] == '/' {
-			sb.WriteString(url.PathEscape(p[0 : pl-1]))
+	} else {
+		for _, p := range ub.path {
 			sb.WriteByte('/')
-		} else {
-			sb.WriteString(url.PathEscape(p))
+			if p == "/" {
+				continue
+			}
+			if pl := len(p); pl > 0 && p[pl-1] == '/' {
+				sb.WriteString(url.PathEscape(p[0 : pl-1]))
+				sb.WriteByte('/')
+			} else {
+				sb.WriteString(url.PathEscape(p))
+			}
 		}
 	}
 
