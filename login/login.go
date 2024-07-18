@@ -118,6 +118,9 @@ type Redirector interface {
 	// Redirect after a successful login.
 	SuccessRedirect(http.ResponseWriter, *http.Request, UserInfo)
 
+	// Redirect after a login with errors.
+	ErrorRedirect(http.ResponseWriter, *http.Request, UserInfo, error)
+
 	// Redirect after logout.
 	LogoutRedirect(http.ResponseWriter, *http.Request)
 }
@@ -142,27 +145,35 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 			return
 		}
 
-		hasher := sha512.New512_256()
-		_, _ = io.CopyN(hasher, rand.Reader, 32)
-		auth := lp.asHex(hasher)
-		lp.setAuthCookie(w, auth)
-
-		hasher.Reset()
-		hasher.Write([]byte(auth))
-		sessid := SessionID(lp.asHex(hasher))
-		if err = lp.sess.SetUserAuth(ctx, userinfo, sessid); err != nil {
-			lp.logger.Error("set-session failed", "error", err)
-			lp.redir.LoginRedirect(w, r)
-			return
-		}
-		lp.logger.Info("Login", "user", userinfo.Name())
-		r = r.WithContext(setSession(ctx, &SessionInfo{SessionID: sessid, User: userinfo}))
-		lp.redir.SuccessRedirect(w, r, userinfo)
+		_ = lp.LoginUser(w, r, userinfo)
 	}
 }
 func (lp *Provider) loginRedirect(w http.ResponseWriter, r *http.Request) {
 	lp.clearAuthCookie(w)
 	lp.redir.LoginRedirect(w, r)
+}
+
+// LoginUser performs the login session handling for an already authenticated user.
+func (lp *Provider) LoginUser(w http.ResponseWriter, r *http.Request, userinfo UserInfo) bool {
+	ctx := r.Context()
+
+	hasher := sha512.New512_256()
+	_, _ = io.CopyN(hasher, rand.Reader, 32)
+	auth := lp.asHex(hasher)
+	lp.setAuthCookie(w, auth)
+
+	hasher.Reset()
+	hasher.Write([]byte(auth))
+	sessid := SessionID(lp.asHex(hasher))
+	if err := lp.sess.SetUserAuth(ctx, userinfo, sessid); err != nil {
+		lp.logger.Error("set-session", "error", err)
+		lp.redir.ErrorRedirect(w, r, userinfo, err)
+		return false
+	}
+	lp.logger.Info("Login", "user", userinfo.Name())
+	r = r.WithContext(setSession(ctx, &SessionInfo{SessionID: sessid, User: userinfo}))
+	lp.redir.SuccessRedirect(w, r, userinfo)
+	return true
 }
 
 // LogoutFunc creates a HandlerFunc that executes a logout.
