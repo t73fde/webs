@@ -145,7 +145,7 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 			return
 		}
 
-		_ = lp.LoginUser(w, r, userinfo)
+		lp.LoginUser(w, r, userinfo)
 	}
 }
 func (lp *Provider) loginRedirect(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +154,7 @@ func (lp *Provider) loginRedirect(w http.ResponseWriter, r *http.Request) {
 }
 
 // LoginUser performs the login session handling for an already authenticated user.
-func (lp *Provider) LoginUser(w http.ResponseWriter, r *http.Request, userinfo UserInfo) bool {
+func (lp *Provider) LoginUser(w http.ResponseWriter, r *http.Request, userinfo UserInfo) {
 	ctx := r.Context()
 
 	hasher := sha512.New512_256()
@@ -168,12 +168,11 @@ func (lp *Provider) LoginUser(w http.ResponseWriter, r *http.Request, userinfo U
 	if err := lp.sess.SetUserAuth(ctx, userinfo, sessid); err != nil {
 		lp.logger.Error("set-session", "error", err)
 		lp.redir.ErrorRedirect(w, r, userinfo, err)
-		return false
+		return
 	}
 	lp.logger.Info("Login", "user", userinfo.Name())
 	r = r.WithContext(setSession(ctx, &SessionInfo{SessionID: sessid, User: userinfo}))
 	lp.redir.SuccessRedirect(w, r, userinfo)
-	return true
 }
 
 // LogoutFunc creates a HandlerFunc that executes a logout.
