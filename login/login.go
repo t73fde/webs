@@ -25,6 +25,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
 // Provider is an object that handles everything w.r.t authentication.
@@ -44,6 +46,10 @@ type Provider struct {
 	UsernameKey string
 	PasswordKey string
 	cookieName  string
+
+	mxAuthProgress sync.Mutex
+	authProgress   map[string]struct{}
+	authWait       time.Duration
 }
 
 // MakeProvider make a new authenticator. Typically, you only need one
@@ -57,13 +63,16 @@ func MakeProvider(logger *slog.Logger, auth Authenticator, sess SessionManager, 
 
 		passlen:      127,
 		authlen:      32,
-		cookiePath:   "/", // TODO: should be settable
+		cookiePath:   "/", // TODO: should be set-able
 		maxCookieAge: 366 * 24 * 3600,
 		secureCookie: false,
 
 		UsernameKey: "username",
 		PasswordKey: "password",
 		cookieName:  "auth",
+
+		authProgress: map[string]struct{}{},
+		authWait:     2 * time.Second, // wait time for multiple logins
 	}
 	return &provider
 }
@@ -136,15 +145,37 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 		}
 
 		ctx := r.Context()
+		if !lp.rateAndWait(username) {
+			lp.logger.InfoContext(ctx, "login rated", "username", username)
+			lp.loginRedirect(w, r)
+			return
+		}
+
 		userinfo, err := lp.auth.Authenticate(ctx, username, password)
 		if err != nil {
-			lp.logger.Info("login failed", "error", err)
+			lp.logger.InfoContext(ctx, "login failed", "error", err)
 			lp.loginRedirect(w, r)
 			return
 		}
 
 		lp.LoginUser(w, r, userinfo)
 	}
+}
+func (lp *Provider) rateAndWait(username string) bool {
+	lp.mxAuthProgress.Lock()
+	defer lp.mxAuthProgress.Unlock()
+	if _, found := lp.authProgress[username]; found {
+		return false
+	}
+	lp.authProgress[username] = struct{}{}
+	go func(name string) {
+		time.Sleep(lp.authWait)
+		lp.mxAuthProgress.Lock()
+		delete(lp.authProgress, name)
+		lp.mxAuthProgress.Unlock()
+	}(username)
+
+	return true
 }
 func (lp *Provider) loginRedirect(w http.ResponseWriter, r *http.Request) {
 	lp.clearAuthCookie(w)
