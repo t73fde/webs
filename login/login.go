@@ -132,9 +132,9 @@ type Redirector interface {
 	LogoutRedirect(http.ResponseWriter, *http.Request)
 }
 
-// LoginFunc creates a HandlerFunc to execute a POST request from the login web page.
-func (lp *Provider) LoginFunc() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// Login creates a handler to implement a POST request from the login web page.
+func (lp *Provider) Login() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username := strings.TrimSpace(r.FormValue(lp.UsernameKey))
 		password := strings.TrimSpace(r.FormValue(lp.PasswordKey))
 
@@ -159,7 +159,7 @@ func (lp *Provider) LoginFunc() http.HandlerFunc {
 		}
 
 		lp.LoginUser(w, r, userinfo)
-	}
+	})
 }
 func (lp *Provider) rateAndWait(username string) bool {
 	lp.mxAuthProgress.Lock()
@@ -204,9 +204,9 @@ func (lp *Provider) LoginUser(w http.ResponseWriter, r *http.Request, userinfo U
 	lp.redir.SuccessRedirect(w, r, userinfo)
 }
 
-// LogoutFunc creates a HandlerFunc that executes a logout.
-func (lp *Provider) LogoutFunc() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// Logout creates a handler that implements a logout.
+func (lp *Provider) Logout() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userinfo, auth, err := lp.checkCookie(r)
 		if err != nil {
 			lp.logger.Info("invalid cookie", "error", err)
@@ -220,7 +220,7 @@ func (lp *Provider) LogoutFunc() http.HandlerFunc {
 		}
 		lp.clearAuthCookie(w)
 		lp.redir.LogoutRedirect(w, r)
-	}
+	})
 }
 
 type sessionKeytype struct{}
