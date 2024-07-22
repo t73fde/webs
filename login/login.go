@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 // Provider is an object that handles everything w.r.t authentication.
@@ -37,7 +38,7 @@ type Provider struct {
 	sess   SessionManager
 	redir  Redirector
 
-	passlen      int // max length of username and password
+	PassLen      int // max length of username and password
 	authlen      int // max length of cookie value
 	cookiePath   string
 	maxCookieAge int
@@ -61,7 +62,7 @@ func MakeProvider(logger *slog.Logger, auth Authenticator, sess SessionManager, 
 		sess:   sess,
 		redir:  redir,
 
-		passlen:      127,
+		PassLen:      127,
 		authlen:      32,
 		cookiePath:   "/", // TODO: should be set-able
 		maxCookieAge: 366 * 24 * 3600,
@@ -138,7 +139,7 @@ func (lp *Provider) Login() http.Handler {
 		username := strings.TrimSpace(r.FormValue(lp.UsernameKey))
 		password := strings.TrimSpace(r.FormValue(lp.PasswordKey))
 
-		if l := lp.passlen; username == "" || len(username) > l || password == "" || len(password) > l {
+		if !lp.validateUsernamePassword(username, password) {
 			lp.logger.Info("invalid password attempt")
 			lp.loginRedirect(w, r)
 			return
@@ -160,6 +161,16 @@ func (lp *Provider) Login() http.Handler {
 
 		lp.LoginUser(w, r, userinfo)
 	})
+}
+func (lp *Provider) validateUsernamePassword(username, password string) bool {
+	passlen := lp.PassLen
+	if username == "" || len(username) > 4*passlen || password == "" || len(password) > 4*passlen {
+		return false
+	}
+	if utf8.RuneCountInString(username) > passlen || utf8.RuneCountInString(password) > passlen {
+		return false
+	}
+	return true
 }
 func (lp *Provider) rateAndWait(username string) bool {
 	lp.mxAuthProgress.Lock()
