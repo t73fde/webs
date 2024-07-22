@@ -25,8 +25,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"t73f.de/r/webs/middleware"
 )
 
 // Provider is an object that handles everything w.r.t authentication.
@@ -202,42 +200,37 @@ func setSession(ctx context.Context, session *SessionInfo) context.Context {
 	return context.WithValue(ctx, sessionKey, session)
 }
 
-// EnrichUserInfo creates a middleware.Func that retrieves the user info based
-// on the cookie and stores it in the request context.
+// EnrichUserInfo is a middleware that retrieves the user info based on the
+// cookie and stores it in the request context.
 //
-// Function User() will provide the actual user info for handler functions.
-func (lp *Provider) EnrichUserInfo() middleware.Func {
-	return func(handler http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			if userinfo, sessid, err := lp.checkCookie(r); err == nil {
-				ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
-				r = r.WithContext(ctx)
-			}
-			handler(w, r)
+// Function User() will provide the actual user info for handlers.
+func (lp *Provider) EnrichUserInfo(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if userinfo, sessid, err := lp.checkCookie(r); err == nil {
+			ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
+			r = r.WithContext(ctx)
 		}
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-// Required creates a middleware.Func that ensures a logged-in user. Otherwise
-// the anonymous user is redirected to the login page.
+// Required ensures a logged-in user. Otherwise the anonymous user is
+// redirected to the login page.
 //
 // Required implies EnrichUserInfo, i.e. there is no need to wrap a handler
 // function with EnrichUserInfo.
 //
-// Function User() can be used to retrieve the actual user inside a
-// handler function.
-func (lp *Provider) Required() middleware.Func {
-	return func(handler http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			if userinfo, sessid, err := lp.checkCookie(r); err == nil {
-				ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
-				r = r.WithContext(ctx)
-				handler(w, r)
-			} else {
-				lp.loginRedirect(w, r)
-			}
+// Function User() can be used to retrieve the actual user inside a handler.
+func (lp *Provider) Required(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if userinfo, sessid, err := lp.checkCookie(r); err == nil {
+			ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		} else {
+			lp.loginRedirect(w, r)
 		}
-	}
+	})
 }
 
 // Session returns a reference to the current user session, or nil if there is
