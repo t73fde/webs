@@ -78,6 +78,15 @@ func Parse(s string) (Key, error) {
 	return result, nil
 }
 
+// MustParse parses the string into an external key, and panics if that is not possible.
+func MustParse(s string) Key {
+	key, err := Parse(s)
+	if err == nil {
+		return key
+	}
+	panic(err)
+}
+
 // IsInvalid returns true if the key is definitely an invalid key.
 func (key Key) IsInvalid() bool { return key == Invalid }
 
