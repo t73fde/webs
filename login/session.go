@@ -22,14 +22,14 @@ import (
 // RAMSessions is a SessionManager that stores its sessions in main memory.
 type RAMSessions struct {
 	mx       sync.Mutex // procted following map
-	sessions map[string]*sessionData
+	sessions map[SessionID]*sessionData
 }
 type sessionData struct {
 	user    UserInfo
 	expires time.Time
 }
 
-func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth string) error {
+func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth SessionID) error {
 	session := sessionData{
 		user:    userinfo,
 		expires: time.Now().Add(7 * 24 * time.Hour),
@@ -38,7 +38,7 @@ func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth st
 	rs.mx.Lock()
 	numSessions := len(rs.sessions)
 	if numSessions == 0 {
-		rs.sessions = map[string]*sessionData{auth: &session}
+		rs.sessions = map[SessionID]*sessionData{auth: &session}
 	} else if numSessions > 1024 {
 		return ErrTooManySessions
 	} else {
@@ -48,7 +48,7 @@ func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth st
 	return nil
 }
 
-func (rs *RAMSessions) UserAuth(_ context.Context, auth string) (UserInfo, error) {
+func (rs *RAMSessions) UserAuth(_ context.Context, auth SessionID) (UserInfo, error) {
 	var session *sessionData
 	var found bool
 	rs.mx.Lock()
@@ -71,7 +71,7 @@ func (rs *RAMSessions) UserAuth(_ context.Context, auth string) (UserInfo, error
 	return session.user, nil
 }
 
-func (rs *RAMSessions) Remove(_ context.Context, auth string) error {
+func (rs *RAMSessions) Remove(_ context.Context, auth SessionID) error {
 	rs.mx.Lock()
 	if len(rs.sessions) > 0 {
 		delete(rs.sessions, auth)

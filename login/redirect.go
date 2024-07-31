@@ -19,6 +19,7 @@ import "net/http"
 type SimpleRedirector struct {
 	LoginURL   string
 	SuccessURL string
+	ErrorURL   string
 	LogoutURL  string
 }
 
@@ -34,6 +35,13 @@ func (sr *SimpleRedirector) SuccessRedirect(w http.ResponseWriter, r *http.Reque
 		sr.SuccessURL = "/"
 	}
 	http.Redirect(w, r, sr.SuccessURL, http.StatusSeeOther)
+}
+
+func (sr *SimpleRedirector) ErrorRedirect(w http.ResponseWriter, r *http.Request, _ UserInfo, _ error) {
+	if sr.ErrorURL == "" {
+		sr.ErrorURL = "/"
+	}
+	http.Redirect(w, r, sr.ErrorURL, http.StatusSeeOther)
 }
 
 func (sr *SimpleRedirector) LogoutRedirect(w http.ResponseWriter, r *http.Request) {
