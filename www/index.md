@@ -7,6 +7,7 @@ This is a collection of utility functions to build web applications in
 * [flash](/dir?ci=tip&name=flash): display application defined messages on next web page.
 * [login](/dir?ci=tip&name=login): simple password based cookie authentication.
 * [middleware](/dir?ci=tip&name=middleware): functions that transform web handlers.
+* [site](/dir?ci=tip&name=site): define web site structure; provides methods on that structure.
 * [urlbuilder](/dir?ci=tip&name=urlbuilder) creates URLs to be used in HTML.
 
 ## Use instructions
