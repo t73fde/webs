@@ -17,6 +17,7 @@ package site
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"slices"
 	"strings"
 
@@ -25,8 +26,9 @@ import (
 
 // Site contains information about the web site.
 type Site struct {
-	Name     string   // Name of the site.
-	Basepath string   // Base path, where the site is available.
+	Name     string // Name of the site.
+	Basepath string // Base path, where the site is available.
+	Language string
 	Methods  []string // HTTP methods to be used by node handler. Default: GET, POST.
 	Root     Node     // Root note of the site.
 
@@ -34,6 +36,9 @@ type Site struct {
 	basepaths []string
 	nodes     map[string]*Node
 }
+
+// DefaultLanguage is the language value used as a default.
+const DefaultLanguage = "en"
 
 // Bake the internal data of the Site.
 func (st *Site) Bake() error {
@@ -49,7 +54,12 @@ func (st *Site) Bake() error {
 			st.basepaths = append(st.basepaths, p)
 		}
 	}
-	st.Basepath = strings.Join(st.basepaths, "/")
+	st.Basepath = path.Join(st.basepaths...)
+
+	st.Language = strings.TrimSpace(st.Language)
+	if st.Language == "" {
+		st.Language = DefaultLanguage
+	}
 
 	if len(st.Methods) == 0 {
 		st.Methods = []string{
@@ -111,6 +121,7 @@ type Node struct {
 	ID       string            // Unique identification
 	Nodepath string            // Path element
 	Title    string            // Title of the node: <title>{TITLE}</title>, <h1>{TITLE}</h1>
+	Language string            // Language of the node
 	Extra    map[string]string // Some extra information, to be defined by application
 	Handler  []string          // 0=GET, 1=POST (see Site.Methods)
 	Children []*Node           // Child nodes
@@ -118,6 +129,7 @@ type Node struct {
 	site     *Site
 	parent   *Node
 	pathSpec pathSpec
+	hmap     map[string]string
 }
 
 // pathSpec determines the type of the nodepath.
@@ -133,12 +145,43 @@ const (
 // PathSpec return the type of the node path.
 func (n *Node) PathSpec() pathSpec { return n.pathSpec }
 
+// Path returns the full path to this node.
+func (n *Node) Path() string {
+	ancestors := []string{}
+	for a := n; a != nil; a = a.parent {
+		if p := a.Nodepath; p != "" {
+			ancestors = append(ancestors, a.Nodepath)
+		}
+	}
+	ancestors = append(ancestors, n.site.Basepath)
+	slices.Reverse(ancestors)
+	return path.Join(ancestors...)
+}
+
 // GetTitle returns the title of the node. If no title is stored, its ID is returned.
 func (n *Node) GetTitle() string {
 	if title := n.Title; title != "" {
 		return title
 	}
 	return n.ID
+}
+
+// SetHandler set the given handler name for the given method.
+func (n *Node) SetHandler(method, handler string) {
+	if hm := n.hmap; hm != nil {
+		hm[method] = handler
+		return
+	}
+	n.hmap = map[string]string{method: handler}
+}
+
+// SetExtra set a key to a value.
+func (n *Node) SetExtra(key, val string) {
+	if extra := n.Extra; len(extra) > 0 {
+		extra[key] = val
+		return
+	}
+	n.Extra = map[string]string{key: val}
 }
 
 // GetExtra returns the stored value of a specific key.
@@ -149,6 +192,9 @@ func (n *Node) GetExtra(key string) (string, bool) {
 	}
 	return "", false
 }
+
+// Parent returns the superior / parent node (or nil, if root node).
+func (n *Node) Parent() *Node { return n.parent }
 
 // BestNode returns the node that matches the given relative path the best.
 // It never returns nil.
@@ -211,8 +257,37 @@ func (n *Node) bake(st *Site, p *Node) error {
 	n.Nodepath = nodepath
 
 	n.Title = strings.TrimSpace(n.Title)
+
+	n.Language = strings.TrimSpace(n.Language)
+	if n.Language == "" {
+		if p != nil {
+			n.Language = p.Language
+		} else {
+			n.Language = st.Language
+		}
+	}
+
 	n.site = st
 	n.parent = p
+
+	if hm := n.hmap; hm != nil {
+		hsl := make([]string, len(st.Methods))
+		for m, h := range hm {
+			if pos := slices.Index(st.Methods, m); pos >= 0 {
+				hsl[pos] = h
+			}
+		}
+		n.Handler = hsl
+	} else if numHandler := len(n.Handler); numHandler > 0 {
+		hm := make(map[string]string, numHandler)
+		numMethods := len(st.Methods)
+		for i, h := range n.Handler {
+			if i >= numMethods {
+				break
+			}
+			hm[st.Methods[i]] = h
+		}
+	}
 
 	children := make([]*Node, 0, len(n.Children))
 	for _, child := range n.Children {

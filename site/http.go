@@ -42,10 +42,14 @@ func (n *Node) Handle(reg Registerer, basepath string) {
 		hPath = rawpath
 	}
 
+	methods := n.site.Methods
 	for i, handlerName := range n.Handler {
-		st := n.site
-		if len(st.Methods) < i {
+		if len(methods) < i {
 			break
+		}
+		method := methods[i]
+		if method == "" || handlerName == "" {
+			continue
 		}
 		handler, found := reg.GetHandler(handlerName)
 		if !found {
@@ -53,7 +57,6 @@ func (n *Node) Handle(reg Registerer, basepath string) {
 		}
 		handler = reg.AddMiddleware(n, handler)
 
-		method := st.Methods[i]
 		reg.Handle(method+" "+hPath, handler)
 	}
 
