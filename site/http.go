@@ -13,7 +13,10 @@
 
 package site
 
-import "net/http"
+import (
+	"net/http"
+	"path"
+)
 
 // Registerer contains all methods need to register handler for HTTP.
 type Registerer interface {
@@ -24,22 +27,21 @@ type Registerer interface {
 
 // Handle registers all named handlers for the whole site.
 func (st *Site) Handle(reg Registerer) {
-	st.Root.Handle(reg, st.Basepath)
+	st.Root.handle(reg, st.Basepath)
 }
 
 // Handle registers all named handlers for the node and its children.
-func (n *Node) Handle(reg Registerer, basepath string) {
-	rawpath := basepath + n.Nodepath
-	path := rawpath + "/"
+func (n *Node) handle(reg Registerer, basepath string) {
+	upath := path.Join(basepath, n.Nodepath)
 
 	var hPath string
 	switch n.PathSpec() {
 	case pathSpecDir:
-		hPath = rawpath + "/{$}"
+		hPath = path.Join(upath, "{$}")
 	case pathSpecFull:
-		hPath = path
+		hPath = upath + "/"
 	case pathSpecItem:
-		hPath = rawpath
+		hPath = upath
 	}
 
 	methods := n.site.Methods
@@ -61,6 +63,6 @@ func (n *Node) Handle(reg Registerer, basepath string) {
 	}
 
 	for _, child := range n.Children {
-		child.Handle(reg, path)
+		child.handle(reg, upath)
 	}
 }

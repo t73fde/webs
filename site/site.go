@@ -54,7 +54,7 @@ func (st *Site) Bake() error {
 			st.basepaths = append(st.basepaths, p)
 		}
 	}
-	st.Basepath = path.Join(st.basepaths...)
+	st.Basepath = "/" + path.Join(st.basepaths...)
 
 	st.Language = strings.TrimSpace(st.Language)
 	if st.Language == "" {
