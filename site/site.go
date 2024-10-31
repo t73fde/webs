@@ -108,8 +108,8 @@ func (st *Site) MakeURLBuilder() *urlbuilder.URLBuilder {
 
 // BuilderFor returns an URL builder initialized with the full path of the
 // node with the given identifier.
-func (st *Site) BuilderFor(nodeId string, args ...string) *urlbuilder.URLBuilder {
-	n := st.Node(nodeId)
+func (st *Site) BuilderFor(nodeID string, args ...string) *urlbuilder.URLBuilder {
+	n := st.Node(nodeID)
 	if n == nil {
 		return nil
 	}
@@ -142,9 +142,6 @@ const (
 	pathSpecItem                 // Path does not end with '/'
 )
 
-// PathSpec return the type of the node path.
-func (n *Node) PathSpec() pathSpec { return n.pathSpec }
-
 // Path returns the full path to this node.
 func (n *Node) Path() string {
 	ancestors := []string{}
@@ -155,7 +152,11 @@ func (n *Node) Path() string {
 	}
 	ancestors = append(ancestors, n.site.Basepath)
 	slices.Reverse(ancestors)
-	return path.Join(ancestors...)
+	result := path.Join(ancestors...)
+	if n.pathSpec == pathSpecDir && result[len(result)-1] != '/' {
+		return result + "/"
+	}
+	return result
 }
 
 // GetTitle returns the title of the node. If no title is stored, its ID is returned.

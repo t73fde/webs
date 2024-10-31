@@ -35,7 +35,7 @@ func (n *Node) handle(reg Registerer, basepath string) {
 	upath := path.Join(basepath, n.Nodepath)
 
 	var hPath string
-	switch n.PathSpec() {
+	switch n.pathSpec {
 	case pathSpecDir:
 		hPath = path.Join(upath, "{$}")
 	case pathSpecFull:
