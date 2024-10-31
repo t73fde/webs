@@ -22,6 +22,7 @@ import (
 // NoAuthenticator authenticates nothing.
 type NoAuthenticator struct{}
 
+// Authenticate does not authenticate any user.
 func (*NoAuthenticator) Authenticate(context.Context, string, string) (UserInfo, error) {
 	return nil, ErrUsernamePassword
 }
@@ -40,6 +41,9 @@ type testUserInfo struct {
 func (u *testUserInfo) Name() string      { return u.name }
 func (u *testUserInfo) SessionID() string { return u.sess }
 
+// Authenticate a user for testing purposes: username begins with 'x' -> no authentication;
+// username begins with 'q': password must be equal to username. In all other
+// cases, the user is authenticated.
 func (ta *TestAuthenticator) Authenticate(_ context.Context, username, password string) (UserInfo, error) {
 	if username[0] == 'x' {
 		return nil, ErrUsernamePassword

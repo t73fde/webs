@@ -157,9 +157,9 @@ func NewGenerator(appBits uint) Generator {
 const epochAdjust = 1717200000000
 
 // Create generates a new key with the given application data.
-func (gen *Generator) Create(appId uint) Key {
-	if appId > 0 && appId >= gen.appMax {
-		panic(fmt.Errorf("application value out of range: %v (max: %v)", appId, gen.appMax))
+func (gen *Generator) Create(appID uint) Key {
+	if appID > 0 && appID >= gen.appMax {
+		panic(fmt.Errorf("application value out of range: %v (max: %v)", appID, gen.appMax))
 	}
 	for {
 		milli := uint64(time.Now().UnixMilli())
@@ -183,7 +183,7 @@ func (gen *Generator) Create(appId uint) Key {
 			}
 
 			// 42bit=ts, kg.intBits=appId, 22-kg.intBits=seq
-			k := (ts << randomBits) | (uint64(appId) << (randomBits - gen.appBits)) | seq
+			k := (ts << randomBits) | (uint64(appID) << (randomBits - gen.appBits)) | seq
 			return Key(k)
 		}
 

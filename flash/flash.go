@@ -45,6 +45,7 @@ type memMessages struct {
 	expiry   time.Time
 }
 
+// MakeMemoryFlasher creates a Flasher that stores its data in RAM.
 func MakeMemoryFlasher() Flasher {
 	return &memoryFlasher{sessions: make(map[login.SessionID]*memMessages, 128)}
 }

@@ -29,6 +29,7 @@ type sessionData struct {
 	expires time.Time
 }
 
+// SetUserAuth stores user information to the given seesion.
 func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth SessionID) error {
 	session := sessionData{
 		user:    userinfo,
@@ -48,6 +49,7 @@ func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth Se
 	return nil
 }
 
+// UserAuth returns user information for the currently logged in user.
 func (rs *RAMSessions) UserAuth(_ context.Context, auth SessionID) (UserInfo, error) {
 	var session *sessionData
 	var found bool
@@ -71,6 +73,7 @@ func (rs *RAMSessions) UserAuth(_ context.Context, auth SessionID) (UserInfo, er
 	return session.user, nil
 }
 
+// Remove the session. Effectively, the user is logged out.
 func (rs *RAMSessions) Remove(_ context.Context, auth SessionID) error {
 	rs.mx.Lock()
 	if len(rs.sessions) > 0 {

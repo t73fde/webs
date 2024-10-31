@@ -85,7 +85,11 @@ type Authenticator interface {
 	Authenticate(ctx context.Context, username, password string) (UserInfo, error)
 }
 
+// ErrUsernamePassword is signaled if wrong username was given, or if the given
+// password does not matched to the registered value.
 var ErrUsernamePassword = errors.New("username and password do not match")
+
+// ErrTooManyUsers is signaled if no user can be added.
 var ErrTooManyUsers = errors.New("too many users")
 
 // UserInfo gives some information about a user, w.r.t. authentication.
@@ -96,10 +100,13 @@ type UserInfo interface {
 }
 
 type (
+	// SessionInfo is the data associated with a session.
 	SessionInfo struct {
 		SessionID SessionID
 		User      UserInfo
 	}
+
+	// SessionID is an identifier for a session.
 	SessionID string
 )
 
@@ -115,7 +122,10 @@ type SessionManager interface {
 	Remove(context.Context, SessionID) error
 }
 
+// ErrNoSuchSession signals that the given session identifier is invalid.
 var ErrNoSuchSession = errors.New("no such session")
+
+// ErrTooManySessions singals that too many sessions are currently open.
 var ErrTooManySessions = errors.New("too many open sessions")
 
 // Redirector will redirect the user to an appropriate URL.

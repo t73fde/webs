@@ -23,6 +23,7 @@ type SimpleRedirector struct {
 	LogoutURL  string
 }
 
+// LoginRedirect performs a redirection if user must authenticate itself.
 func (sr *SimpleRedirector) LoginRedirect(w http.ResponseWriter, r *http.Request) {
 	if sr.LoginURL == "" {
 		sr.LoginURL = "/login/"
@@ -30,6 +31,7 @@ func (sr *SimpleRedirector) LoginRedirect(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, sr.LoginURL, http.StatusSeeOther)
 }
 
+// SuccessRedirect performs a redirection after the user was successfully authenticated.
 func (sr *SimpleRedirector) SuccessRedirect(w http.ResponseWriter, r *http.Request, _ UserInfo) {
 	if sr.SuccessURL == "" {
 		sr.SuccessURL = "/"
@@ -37,6 +39,7 @@ func (sr *SimpleRedirector) SuccessRedirect(w http.ResponseWriter, r *http.Reque
 	http.Redirect(w, r, sr.SuccessURL, http.StatusSeeOther)
 }
 
+// ErrorRedirect performs a redirection if user was not authenticated during login.
 func (sr *SimpleRedirector) ErrorRedirect(w http.ResponseWriter, r *http.Request, _ UserInfo, _ error) {
 	if sr.ErrorURL == "" {
 		sr.ErrorURL = "/"
@@ -44,6 +47,7 @@ func (sr *SimpleRedirector) ErrorRedirect(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, sr.ErrorURL, http.StatusSeeOther)
 }
 
+// LogoutRedirect performs a rediration when user logs out.
 func (sr *SimpleRedirector) LogoutRedirect(w http.ResponseWriter, r *http.Request) {
 	if sr.LogoutURL == "" {
 		sr.LogoutURL = "/"

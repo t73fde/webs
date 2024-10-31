@@ -11,6 +11,7 @@
 // SPDX-FileCopyrightText: 2024-present Detlef Stern
 //-----------------------------------------------------------------------------
 
+// Package urlbuilder allows to build application specific URLs.
 package urlbuilder
 
 import (
