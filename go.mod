@@ -1,3 +1,3 @@
 module t73f.de/r/webs
 
-go 1.23
+go 1.24
