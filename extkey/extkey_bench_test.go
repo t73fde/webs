@@ -21,8 +21,7 @@ import (
 
 func BenchmarkSnowflake(b *testing.B) {
 	var generator extkey.Generator
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		generator.Create(0)
 	}
 }
@@ -30,7 +29,7 @@ func BenchmarkSnowflakeX(b *testing.B) {
 	bits := 7
 	generator := extkey.NewGenerator(uint(bits))
 	key := uint((1 << bits) - 1)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		generator.Create(key)
 	}
 }

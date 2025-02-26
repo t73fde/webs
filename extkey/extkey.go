@@ -58,7 +58,7 @@ const MaxAppBits = 20
 // Parse will parse a string into an external key.
 func Parse(s string) (Key, error) {
 	result := Key(0)
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		ch := s[i]
 		if ch == '-' && i > 0 && i < len(s)-1 {
 			continue
@@ -121,7 +121,7 @@ func (key Key) String() string {
 		u64 = u64 >> 5
 	}
 	var result [13]byte
-	for i := 0; i < tpos; i++ {
+	for i := range tpos {
 		result[i] = temp[tpos-i-1]
 	}
 	return string(result[:tpos])

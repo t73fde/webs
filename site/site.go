@@ -49,7 +49,7 @@ func (st *Site) Bake() error {
 	st.Name = strings.TrimSpace(st.Name)
 
 	basepath := strings.TrimSpace(st.Basepath)
-	for _, p := range strings.Split(basepath, "/") {
+	for p := range strings.SplitSeq(basepath, "/") {
 		if p != "" {
 			st.basepaths = append(st.basepaths, p)
 		}
@@ -280,7 +280,7 @@ func (n *Node) bake(st *Site, p *Node) error {
 		}
 		n.Handler = hsl
 	} else if numHandler := len(n.Handler); numHandler > 0 {
-		hm := make(map[string]string, numHandler)
+		hm = make(map[string]string, numHandler)
 		numMethods := len(st.Methods)
 		for i, h := range n.Handler {
 			if i >= numMethods {

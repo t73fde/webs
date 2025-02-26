@@ -53,7 +53,7 @@ func TestGenerator(t *testing.T) {
 	var generator extkey.Generator
 	var lastKey extkey.Key
 
-	for i := 0; i < 1000000; i++ {
+	for range 1000000 {
 		key := generator.Create(0)
 		if key <= lastKey {
 			t.Errorf("key does not increase: %v -> %v", lastKey, key)
@@ -79,7 +79,7 @@ func TestKeyID(t *testing.T) {
 	for intBits := uint(0); intBits <= extkey.MaxAppBits; intBits++ {
 		maxID := int32(1 << intBits)
 		generator := extkey.NewGenerator(intBits)
-		for i := 0; i < 512; i++ {
+		for range 512 {
 			exp := uint(rand.Int31n(maxID))
 			key := generator.Create(exp)
 			got := generator.AppID(key)
