@@ -10,6 +10,7 @@ This is a collection of utility functions to build web applications in
 * [middleware](/dir?ci=tip&name=middleware): functions that transform web handlers.
 * [site](/dir?ci=tip&name=site): define web site structure; provides methods on that structure.
 * [urlbuilder](/dir?ci=tip&name=urlbuilder) creates URLs to be used in HTML.
+* [xml](/dir?ci=tip&name=feed): assist XML data generation.
 
 ## Usage instructions
 
