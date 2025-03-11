@@ -3,6 +3,7 @@
 This is a collection of utility functions to build web applications in
 [Go](https://go.dev/).
 
+* [aasvg](/dir?ci=tip&name=aasvg): simple ASCII art to SVG translator
 * [extkey](/dir?ci=tip&name=extkey): flexible key type to be used as an external key (e.g. URI path element), and as a database (primary) key.
 * [feed](/dir?ci=tip&name=feed): assist web feed generation.
 * [flash](/dir?ci=tip&name=flash): display application defined messages on next web page.
