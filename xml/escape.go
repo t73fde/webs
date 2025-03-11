@@ -49,9 +49,9 @@ func EscapeString(w io.Writer, s string) {
 		default:
 			continue
 		}
-		io.WriteString(w, s[last:i])
-		w.Write(esc)
+		_, _ = io.WriteString(w, s[last:i])
+		_, _ = w.Write(esc)
 		last = i + 1
 	}
-	io.WriteString(w, s[last:])
+	_, _ = io.WriteString(w, s[last:])
 }
