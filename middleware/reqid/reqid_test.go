@@ -25,14 +25,16 @@ import (
 func TestSimpleReqID(t *testing.T) {
 	rqid := ""
 	var reqidcfg reqid.Config
+	reqidcfg.WithResponse = true
 	reqidcfg.Generator = snow.New(5)
 	reqidcfg.Initialize()
+	key := reqidcfg.HeaderKey
 	reqidcfg.Generator = nil
 	reqidcfg.HeaderKey = ""
 
 	rmw := reqidcfg.Build()
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		rqid = r.Header.Get(reqidcfg.HeaderKey)
+		rqid = r.Header.Get(key)
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/foo", rmw(http.HandlerFunc(handler)))
@@ -41,14 +43,40 @@ func TestSimpleReqID(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewRequest: %s", err)
 	}
-
 	for range 10 {
 		rqid = ""
 		rr := httptest.NewRecorder()
 		mux.ServeHTTP(rr, r)
 		res := rr.Result()
-		if got := res.Header.Get(reqidcfg.HeaderKey); rqid != got {
+		if rqid == "" {
+			t.Error("no header set")
+			break
+		}
+		if got := res.Header.Get(key); rqid != got {
 			t.Errorf("request IDs differ: exp: %q, got: %q", rqid, got)
+			break
+		}
+	}
+
+	reqidcfg.WithResponse = false
+	rmw = reqidcfg.Build()
+	mux.Handle("/bar", rmw(http.HandlerFunc(handler)))
+	r, err = http.NewRequest("GET", "/bar", nil)
+	if err != nil {
+		t.Errorf("NewRequest: %s", err)
+	}
+	for range 10 {
+		rqid = ""
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, r)
+		res := rr.Result()
+		if rqid == "" {
+			t.Error("no header set")
+			break
+		}
+		if got := res.Header.Get(key); got != "" {
+			t.Errorf("no response key expected, got: %q", got)
+			break
 		}
 	}
 }
