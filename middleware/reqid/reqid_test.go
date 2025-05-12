@@ -28,6 +28,7 @@ func TestSimpleReqID(t *testing.T) {
 	reqidcfg.Generator = snow.New(5)
 	reqidcfg.Initialize()
 	reqidcfg.Generator = nil
+	reqidcfg.HeaderKey = ""
 
 	rmw := reqidcfg.Build()
 	handler := func(w http.ResponseWriter, r *http.Request) {
