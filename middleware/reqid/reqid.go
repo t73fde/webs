@@ -23,15 +23,38 @@ import (
 // DefaultHeaderKey specifies the HTTP header key, where the request ID should be stored.
 const DefaultHeaderKey = "X-Request-Id"
 
-// New creates a new Middleware to inject a unique request ID.
-func New() middleware.Middleware {
-	gen := snow.NewGenerator(0)
+// Config stores all configutation to build a Middleware.
+type Config struct {
+	HeaderKey string
+	Generator *snow.Generator
+	AppID     uint
+}
+
+// Initialize the configuration data.
+func (c *Config) Initialize() {
+	if c.HeaderKey == "" {
+		c.HeaderKey = DefaultHeaderKey
+	}
+	if gen := c.Generator; gen != nil {
+		c.AppID = min(c.AppID, gen.MaxAppID())
+	}
+}
+
+// Build the Middleware from the configuration.
+func (c *Config) Build() middleware.Middleware {
+	headerKey := c.HeaderKey
+	gen := c.Generator
+	appID := c.AppID
+	if gen == nil {
+		gen = snow.New(0)
+		appID = 0
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id := gen.Create(0)
+			id := gen.Create(appID)
 			s := id.String()
-			r.Header.Set(DefaultHeaderKey, s)
-			w.Header().Set(DefaultHeaderKey, s)
+			r.Header.Set(headerKey, s)
+			w.Header().Set(headerKey, s)
 			next.ServeHTTP(w, r)
 		})
 	}

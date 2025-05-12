@@ -19,15 +19,21 @@ import (
 	"testing"
 
 	"t73f.de/r/webs/middleware/reqid"
+	"t73f.de/r/zero/snow"
 )
 
 func TestSimpleReqID(t *testing.T) {
 	rqid := ""
+	var reqidcfg reqid.Config
+	reqidcfg.Generator = snow.New(5)
+	reqidcfg.Initialize()
+	reqidcfg.Generator = nil
+
+	rmw := reqidcfg.Build()
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		rqid = r.Header.Get(reqid.DefaultHeaderKey)
+		rqid = r.Header.Get(reqidcfg.HeaderKey)
 	}
 	mux := http.NewServeMux()
-	rmw := reqid.New()
 	mux.Handle("/foo", rmw(http.HandlerFunc(handler)))
 
 	r, err := http.NewRequest("GET", "/foo", nil)
@@ -40,7 +46,7 @@ func TestSimpleReqID(t *testing.T) {
 		rr := httptest.NewRecorder()
 		mux.ServeHTTP(rr, r)
 		res := rr.Result()
-		if got := res.Header.Get(reqid.DefaultHeaderKey); rqid != got {
+		if got := res.Header.Get(reqidcfg.HeaderKey); rqid != got {
 			t.Errorf("request IDs differ: exp: %q, got: %q", rqid, got)
 		}
 	}
