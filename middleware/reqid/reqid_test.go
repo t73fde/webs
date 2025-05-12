@@ -19,22 +19,17 @@ import (
 	"testing"
 
 	"t73f.de/r/webs/middleware/reqid"
-	"t73f.de/r/zero/snow"
 )
 
 func TestSimpleReqID(t *testing.T) {
 	rqid := ""
 	var reqidcfg reqid.Config
 	reqidcfg.WithResponse = true
-	reqidcfg.Generator = snow.New(5)
-	reqidcfg.Initialize()
-	key := reqidcfg.HeaderKey
-	reqidcfg.Generator = nil
-	reqidcfg.HeaderKey = ""
+	reqidcfg.AppID = 65535
 
 	rmw := reqidcfg.Build()
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		rqid = r.Header.Get(key)
+		rqid = r.Header.Get(reqid.DefaultHeaderKey)
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/foo", rmw(http.HandlerFunc(handler)))
@@ -52,7 +47,7 @@ func TestSimpleReqID(t *testing.T) {
 			t.Error("no header set")
 			break
 		}
-		if got := res.Header.Get(key); rqid != got {
+		if got := res.Header.Get(reqid.DefaultHeaderKey); rqid != got {
 			t.Errorf("request IDs differ: exp: %q, got: %q", rqid, got)
 			break
 		}
@@ -74,7 +69,7 @@ func TestSimpleReqID(t *testing.T) {
 			t.Error("no header set")
 			break
 		}
-		if got := res.Header.Get(key); got != "" {
+		if got := res.Header.Get(reqid.DefaultHeaderKey); got != "" {
 			t.Errorf("no response key expected, got: %q", got)
 			break
 		}

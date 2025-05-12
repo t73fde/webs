@@ -33,16 +33,6 @@ type Config struct {
 	WithResponse bool
 }
 
-// Initialize the configuration data with useful data.
-func (c *Config) Initialize() {
-	if c.HeaderKey == "" {
-		c.HeaderKey = DefaultHeaderKey
-	}
-	if gen := c.Generator; gen != nil {
-		c.AppID = min(c.AppID, gen.MaxAppID())
-	}
-}
-
 // Build the Middleware from the configuration.
 func (c *Config) Build() middleware.Middleware {
 	headerKey := c.HeaderKey
@@ -52,6 +42,8 @@ func (c *Config) Build() middleware.Middleware {
 	gen, appID := c.Generator, c.AppID
 	if gen == nil {
 		gen = snow.New(0)
+	}
+	if m := gen.MaxAppID(); appID > m {
 		appID = 0
 	}
 	withResponse := c.WithResponse
