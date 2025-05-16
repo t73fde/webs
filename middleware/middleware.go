@@ -14,7 +14,25 @@
 // Package middleware provides some net/http middleware.
 package middleware
 
-import "net/http"
+import (
+	"iter"
+	"net/http"
+)
 
 // Middleware is a function that transforms an http.Handler into an http.Handler.
 type Middleware func(http.Handler) http.Handler
+
+// Seq is a sequence of Middlewares.
+type Seq interface {
+
+	// Values returns an iterator of the Middlewares to apply.
+	Values() iter.Seq[Middleware]
+}
+
+// Apply the Middleware sequence to the given handler, resulting in a modified handler.
+func Apply(seq Seq, h http.Handler) http.Handler {
+	for mw := range seq.Values() {
+		h = mw(h)
+	}
+	return h
+}

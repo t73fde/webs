@@ -18,7 +18,7 @@ package middleware
 // by Alex Edwards and some ideas from https://github.com/justinas/alice
 
 import (
-	"net/http"
+	"iter"
 	"slices"
 )
 
@@ -32,12 +32,9 @@ func NewChain(seq ...Middleware) Chain {
 	return Chain{seq: slices.Clone(seq)}
 }
 
-// Then applies the Middleware chain to the given handler, resulting in a new handler.
-func (chn Chain) Then(h http.Handler) http.Handler {
-	for _, mw := range slices.Backward(chn.seq) {
-		h = mw(h)
-	}
-	return h
+// NewChainFromList builds a Chain from a given Middleware List.
+func NewChainFromList(l *List) Chain {
+	return Chain{seq: slices.Collect(l.Values())}
 }
 
 // Append middleware to the Chain, resulting in a new Chain.
@@ -47,3 +44,14 @@ func (chn Chain) Append(seq ...Middleware) Chain {
 
 // Extend a Chain by another one, resulting in a new Chain.
 func (chn Chain) Extend(other Chain) Chain { return chn.Append(other.seq...) }
+
+// Values return an iterator of the Middleware Chain, in order of application.
+func (chn Chain) Values() iter.Seq[Middleware] {
+	return func(yield func(Middleware) bool) {
+		for _, mw := range slices.Backward(chn.seq) {
+			if !yield(mw) {
+				return
+			}
+		}
+	}
+}
