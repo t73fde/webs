@@ -22,6 +22,14 @@ import (
 // Middleware is a function that transforms an http.Handler into an http.Handler.
 type Middleware func(http.Handler) http.Handler
 
+// Values returns an iterator with only the given Middleware. This allows to
+// treat Middleware as a Seq.
+func (mw Middleware) Values() iter.Seq[Middleware] {
+	return func(yield func(Middleware) bool) {
+		_ = yield(mw)
+	}
+}
+
 // Seq is a sequence of Middlewares.
 type Seq interface {
 

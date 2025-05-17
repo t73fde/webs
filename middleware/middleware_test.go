@@ -14,6 +14,8 @@
 package middleware_test
 
 import (
+	"fmt"
+	"iter"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -24,30 +26,16 @@ import (
 
 // Based on https://gist.github.com/alexedwards/219d88ebdb9c0c9e74715d243f5b2136
 
-func TestChain(t *testing.T) {
+func TestMiddleware(t *testing.T) {
 	used := ""
 
-	mw := slices.Collect(makeMiddleware(6, &used))
+	mw := slices.Collect(makeMiddleware(3, &used))
 	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	m := http.NewServeMux()
 
-	c1 := middleware.NewChain(mw[0], mw[1])
-	m.Handle("GET /{$}", middleware.Apply(c1, hf))
-
-	c2 := c1.Append(mw[2], mw[3])
-	m.Handle("GET /foo", middleware.Apply(c2, hf))
-
-	c3 := c2.Append(mw[4])
-	m.Handle("GET /nested/foo", middleware.Apply(c3, hf))
-
-	c4 := c1.Extend(middleware.NewChain(mw[5]))
-	m.Handle("GET /bar", middleware.Apply(c4, hf))
-
-	c5 := middleware.NewChainFromList(
-		middleware.NewList(mw[1], middleware.NewList(mw[0], nil)))
-	m.Handle("GET /lst", middleware.Apply(c5, hf))
-
-	m.Handle("GET /baz", middleware.Apply(c1, hf))
+	m.Handle("GET /{$}", middleware.Apply(mw[0], hf))
+	m.Handle("GET /foo", middleware.Apply(mw[1], hf))
+	m.Handle("GET /baz", middleware.Apply(mw[2], hf))
 
 	var tests = []struct {
 		method string
@@ -55,13 +43,10 @@ func TestChain(t *testing.T) {
 		exp    string
 		status int
 	}{
-		{method: "GET", path: "/", exp: ";0;1", status: http.StatusOK},
-		{method: "GET", path: "/foo", exp: ";0;1;2;3", status: http.StatusOK},
-		{method: "GET", path: "/nested/foo", exp: ";0;1;2;3;4", status: http.StatusOK},
-		{method: "GET", path: "/bar", exp: ";0;1;5", status: http.StatusOK},
-		{method: "GET", path: "/baz", exp: ";0;1", status: http.StatusOK},
+		{method: "GET", path: "/", exp: ";0", status: http.StatusOK},
+		{method: "GET", path: "/foo", exp: ";1", status: http.StatusOK},
+		{method: "GET", path: "/baz", exp: ";2", status: http.StatusOK},
 		{method: "GET", path: "/boo", exp: "", status: http.StatusNotFound},
-		{method: "GET", path: "/lst", exp: ";1;0", status: http.StatusOK},
 	}
 
 	for _, test := range tests {
@@ -82,6 +67,22 @@ func TestChain(t *testing.T) {
 
 		if used != test.exp {
 			t.Errorf("%s %s: middleware used: expected %q; got %q", test.method, test.path, test.exp, used)
+		}
+	}
+}
+
+func makeMiddleware(n int, used *string) iter.Seq[middleware.Middleware] {
+	return func(yield func(middleware.Middleware) bool) {
+		for i := range n {
+			m := func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					*used += fmt.Sprintf(";%d", i)
+					next.ServeHTTP(w, r)
+				})
+			}
+			if !yield(m) {
+				return
+			}
 		}
 	}
 }
