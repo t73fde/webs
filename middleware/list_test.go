@@ -27,25 +27,25 @@ import (
 func TestList(t *testing.T) {
 	used := ""
 
-	mw := slices.Collect(makeMiddleware(6, &used))
+	fts := slices.Collect(makeFunctors(6, &used))
 	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	m := http.NewServeMux()
 
-	c1 := middleware.NewChain(mw[0], mw[1])
+	c1 := middleware.NewChain(fts[0], fts[1])
 	l1 := middleware.NewListFromChain(c1)
 	m.Handle("GET /{$}", middleware.Apply(l1, hf))
 
-	c2 := c1.Append(mw[2], mw[3])
+	c2 := c1.Append(fts[2], fts[3])
 	l2 := middleware.NewListFromChain(c2)
 	m.Handle("GET /foo", middleware.Apply(l2, hf))
 
-	l3 := l2.Append(mw[4])
+	l3 := l2.Append(fts[4])
 	m.Handle("GET /nested/foo", middleware.Apply(l3, hf))
 
 	l4 := l1.Extend(nil)
 	m.Handle("GET /bar", middleware.Apply(l4, hf))
 
-	l5 := l1.Extend(middleware.NewList(mw[2], nil).Append(mw[3]))
+	l5 := l1.Extend(middleware.NewList(fts[2], nil).Append(fts[3]))
 	m.Handle("GET /ext", middleware.Apply(l5, hf))
 
 	m.Handle("GET /baz", middleware.Apply(c1, hf))
@@ -84,5 +84,42 @@ func TestList(t *testing.T) {
 		if used != test.exp {
 			t.Errorf("%s %s: middleware used: expected %q; got %q", test.method, test.path, test.exp, used)
 		}
+	}
+}
+
+func TestListFunctors(t *testing.T) {
+	var used string
+	fts := slices.Collect(makeFunctors(2, &used))
+	l := middleware.NewList(fts[0], middleware.NewList(fts[1], nil))
+	var val middleware.Functor
+	for f := range l.Functors() {
+		val = f
+		break
+	}
+
+	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	m := http.NewServeMux()
+	m.Handle("GET /foo", val(hf))
+	m.Handle("GET /bar", fts[0](hf))
+
+	used = ""
+	r, err := http.NewRequest("GET", "/foo", nil)
+	if err != nil {
+		t.Errorf("NewRequest: %s", err)
+	}
+	rr := httptest.NewRecorder()
+	m.ServeHTTP(rr, r)
+	valUsed := used
+
+	used = ""
+	r, err = http.NewRequest("GET", "/bar", nil)
+	if err != nil {
+		t.Errorf("NewRequest: %s", err)
+	}
+	rr = httptest.NewRecorder()
+	m.ServeHTTP(rr, r)
+
+	if used != valUsed {
+		t.Errorf("%q expected, but got %v", used, valUsed)
 	}
 }

@@ -11,8 +11,8 @@
 // SPDX-FileCopyrightText: 2025-present Detlef Stern
 //-----------------------------------------------------------------------------
 
-// Package reqid provides a middleware to enrich HTTP requests (and optionally
-// HTTP responses) with a unique identifier.
+// Package reqid provides a middleware functor to enrich HTTP requests (and
+// optionally HTTP responses) with a unique identifier.
 package reqid
 
 import (
@@ -25,7 +25,7 @@ import (
 // DefaultHeaderKey specifies the HTTP header key, where the request ID should be stored.
 const DefaultHeaderKey = "X-Request-Id"
 
-// Config stores all configutation to build a Middleware.
+// Config stores all configutation to build a Functor.
 type Config struct {
 	HeaderKey    string
 	Generator    *snow.Generator
@@ -33,8 +33,8 @@ type Config struct {
 	WithResponse bool
 }
 
-// Build the Middleware from the configuration.
-func (c *Config) Build() middleware.Middleware {
+// Build the Functor from the configuration.
+func (c *Config) Build() middleware.Functor {
 	headerKey := c.HeaderKey
 	if c.HeaderKey == "" {
 		headerKey = DefaultHeaderKey

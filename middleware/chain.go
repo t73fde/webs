@@ -24,32 +24,32 @@ import (
 
 // Chain is a immutable sequence of Middleware functors that encapsulate an handler.
 type Chain struct {
-	seq []Middleware
+	seq []Functor
 }
 
 // NewChain creates a new Chain.
-func NewChain(seq ...Middleware) Chain {
+func NewChain(seq ...Functor) Chain {
 	return Chain{seq: slices.Clone(seq)}
 }
 
 // NewChainFromList builds a Chain from a given Middleware List.
 func NewChainFromList(l *List) Chain {
-	return Chain{seq: slices.Collect(l.Values())}
+	return Chain{seq: slices.Collect(l.Functors())}
 }
 
 // Append middleware to the Chain, resulting in a new Chain.
-func (chn Chain) Append(seq ...Middleware) Chain {
+func (chn Chain) Append(seq ...Functor) Chain {
 	return Chain{seq: slices.Concat(chn.seq, seq)}
 }
 
 // Extend a Chain by another one, resulting in a new Chain.
 func (chn Chain) Extend(other Chain) Chain { return chn.Append(other.seq...) }
 
-// Values return an iterator of the Middleware Chain, in order of application.
-func (chn Chain) Values() iter.Seq[Middleware] {
-	return func(yield func(Middleware) bool) {
-		for _, mw := range slices.Backward(chn.seq) {
-			if !yield(mw) {
+// Functors return an iterator of the Middleware Chain, in order of application.
+func (chn Chain) Functors() iter.Seq[Functor] {
+	return func(yield func(Functor) bool) {
+		for _, f := range slices.Backward(chn.seq) {
+			if !yield(f) {
 				return
 			}
 		}

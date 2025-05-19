@@ -29,13 +29,13 @@ import (
 func TestMiddleware(t *testing.T) {
 	used := ""
 
-	mw := slices.Collect(makeMiddleware(3, &used))
+	fts := slices.Collect(makeFunctors(3, &used))
 	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	m := http.NewServeMux()
 
-	m.Handle("GET /{$}", middleware.Apply(mw[0], hf))
-	m.Handle("GET /foo", middleware.Apply(mw[1], hf))
-	m.Handle("GET /baz", middleware.Apply(mw[2], hf))
+	m.Handle("GET /{$}", middleware.Apply(fts[0], hf))
+	m.Handle("GET /foo", middleware.Apply(fts[1], hf))
+	m.Handle("GET /baz", middleware.Apply(fts[2], hf))
 
 	var tests = []struct {
 		method string
@@ -71,8 +71,8 @@ func TestMiddleware(t *testing.T) {
 	}
 }
 
-func makeMiddleware(n int, used *string) iter.Seq[middleware.Middleware] {
-	return func(yield func(middleware.Middleware) bool) {
+func makeFunctors(n int, used *string) iter.Seq[middleware.Functor] {
+	return func(yield func(middleware.Functor) bool) {
 		for i := range n {
 			m := func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

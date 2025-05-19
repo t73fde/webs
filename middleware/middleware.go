@@ -19,28 +19,28 @@ import (
 	"net/http"
 )
 
-// Middleware is a function that transforms an http.Handler into an http.Handler.
-type Middleware func(http.Handler) http.Handler
+// Functor is a function that transforms an http.Handler into an http.Handler.
+type Functor func(http.Handler) http.Handler
 
-// Values returns an iterator with only the given Middleware. This allows to
-// treat Middleware as a Seq.
-func (mw Middleware) Values() iter.Seq[Middleware] {
-	return func(yield func(Middleware) bool) {
-		_ = yield(mw)
+// Functors returns an iterator with only the given Functor. This allows to
+// treat the functor as a Middleware.
+func (f Functor) Functors() iter.Seq[Functor] {
+	return func(yield func(Functor) bool) {
+		_ = yield(f)
 	}
 }
 
-// Seq is a sequence of Middlewares.
-type Seq interface {
+// Middleware is a sequence of http.Handler transforming Functors.
+type Middleware interface {
 
-	// Values returns an iterator of the Middlewares to apply.
-	Values() iter.Seq[Middleware]
+	// Functors returns an iterator of the Functors to apply.
+	Functors() iter.Seq[Functor]
 }
 
 // Apply the Middleware sequence to the given handler, resulting in a modified handler.
-func Apply(seq Seq, h http.Handler) http.Handler {
-	for mw := range seq.Values() {
-		h = mw(h)
+func Apply(m Middleware, h http.Handler) http.Handler {
+	for f := range m.Functors() {
+		h = f(h)
 	}
 	return h
 }

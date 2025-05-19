@@ -17,26 +17,26 @@ import "iter"
 
 // List is a single linked list of Middleware.
 type List struct {
-	mw   Middleware
+	f    Functor
 	next *List
 }
 
 // NewList creates a new list, based on the previous list and a Middleware.
-func NewList(mw Middleware, lst *List) *List {
-	return &List{mw: mw, next: lst}
+func NewList(f Functor, lst *List) *List {
+	return &List{f: f, next: lst}
 }
 
 // NewListFromChain build a new list from a Middleware Chain.
 func NewListFromChain(chn Chain) (l *List) {
-	for _, mw := range chn.seq {
-		l = NewList(mw, l)
+	for _, f := range chn.seq {
+		l = NewList(f, l)
 	}
 	return l
 }
 
 // Append builds a new list by adding the given middleware to the list.
-func (l *List) Append(mw Middleware) *List {
-	return NewList(mw, l)
+func (l *List) Append(f Functor) *List {
+	return NewList(f, l)
 }
 
 // Extend the list by some other list.
@@ -44,7 +44,7 @@ func (l *List) Extend(other *List) *List {
 	if other == nil {
 		return l
 	}
-	first := NewList(other.mw, nil)
+	first := NewList(other.f, nil)
 	prev := first
 	for curr := other; ; {
 		curr = curr.next
@@ -52,16 +52,16 @@ func (l *List) Extend(other *List) *List {
 			prev.next = l
 			return first
 		}
-		prev.next = NewList(curr.mw, nil)
+		prev.next = NewList(curr.f, nil)
 		prev = prev.next
 	}
 }
 
-// Values returns an iterator of Middleware to apply.
-func (l *List) Values() iter.Seq[Middleware] {
-	return func(yield func(Middleware) bool) {
+// Functors returns an iterator of Middleware to apply.
+func (l *List) Functors() iter.Seq[Functor] {
+	return func(yield func(Functor) bool) {
 		for e := l; e != nil; e = e.next {
-			if !yield(e.mw) {
+			if !yield(e.f) {
 				return
 			}
 		}
