@@ -269,15 +269,13 @@ func (lp *Provider) EnrichUserInfo(next http.Handler) http.Handler {
 // Required ensures a logged-in user. Otherwise the anonymous user is
 // redirected to the login page.
 //
-// Required implies EnrichUserInfo, i.e. there is no need to wrap a handler
-// function with EnrichUserInfo.
+// Required does not implies EnrichUserInfo, i.e. you need to wrap a middleware
+// functor EnrichUserInfo.
 //
 // Function User() can be used to retrieve the actual user inside a handler.
 func (lp *Provider) Required(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if userinfo, sessid, err := lp.checkCookie(r); err == nil {
-			ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
-			r = r.WithContext(ctx)
+		if session := Session(r.Context()); session != nil {
 			next.ServeHTTP(w, r)
 		} else {
 			lp.loginRedirect(w, r)
