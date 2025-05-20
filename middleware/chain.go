@@ -34,6 +34,9 @@ func NewChain(seq ...Functor) Chain {
 
 // NewChainFromMiddleware builds a Chain from a given Middleware.
 func NewChainFromMiddleware(m Middleware) Chain {
+	if chn, ok := m.(Chain); ok {
+		return chn
+	}
 	seq := slices.Collect(m.Functors())
 	slices.Reverse(seq)
 	return Chain{seq: seq}

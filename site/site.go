@@ -26,11 +26,12 @@ import (
 
 // Site contains information about the web site.
 type Site struct {
-	Name     string   // Name of the site.
-	Basepath string   // Base path, where the site is available.
-	Language string   // Site default language. Default: "en".
-	Methods  []string // HTTP methods to be used by node handler. Default: GET, POST.
-	Root     Node     // Root note of the site.
+	Name       string   // Name of the site.
+	Basepath   string   // Base path, where the site is available.
+	Language   string   // Site default language. Default: "en".
+	Methods    []string // HTTP methods to be used by node handler. Default: GET, POST.
+	Middleware string   // Global middleware.
+	Root       Node     // Root note of the site.
 
 	baked     bool
 	basepaths []string
@@ -67,6 +68,8 @@ func (st *Site) Bake() error {
 			http.MethodPost,
 		}
 	}
+
+	st.Middleware = strings.TrimSpace(st.Middleware)
 
 	err := st.Root.bake(st, nil)
 	st.baked = (err == nil)
@@ -118,13 +121,15 @@ func (st *Site) BuilderFor(nodeID string, args ...string) *urlbuilder.URLBuilder
 
 // Node stores information about one element of the web site, i.e. a web page.
 type Node struct {
-	ID       string            // Unique identification
-	Nodepath string            // Path element
-	Title    string            // Title of the node: <title>{TITLE}</title>, <h1>{TITLE}</h1>
-	Language string            // Language of the node
-	Extra    map[string]string // Some extra information, to be defined by application
-	Handler  []string          // 0=GET, 1=POST (see Site.Methods)
-	Children []*Node           // Child nodes
+	ID         string            // Unique identification
+	Nodepath   string            // Path element
+	Title      string            // Title of the node: <title>{TITLE}</title>, <h1>{TITLE}</h1>
+	Language   string            // Language of the node
+	Middleware string            // Node specific middleware, is inherited to children
+	Extra      map[string]string // Some extra information, to be defined by application
+	Handler    []string          // 0=GET, 1=POST (see Site.Methods)
+	HandlerMW  []string          // Specific middleware for Node.Handler[].
+	Children   []*Node           // Child nodes
 
 	site     *Site
 	parent   *Node
@@ -268,6 +273,20 @@ func (n *Node) bake(st *Site, p *Node) error {
 		}
 	}
 
+	n.Middleware = strings.TrimSpace(n.Middleware)
+
+	for i, h := range n.Handler {
+		n.Handler[i] = strings.TrimSpace(h)
+	}
+	n.Handler = slices.Clip(n.Handler)
+	for len(n.HandlerMW) < len(n.Handler) {
+		n.HandlerMW = append(n.HandlerMW, "")
+	}
+	for i, m := range n.HandlerMW {
+		n.HandlerMW[i] = strings.TrimSpace(m)
+	}
+	n.HandlerMW = slices.Clip(n.HandlerMW)
+
 	n.site = st
 	n.parent = p
 
@@ -288,6 +307,7 @@ func (n *Node) bake(st *Site, p *Node) error {
 			}
 			hm[st.Methods[i]] = h
 		}
+		//???missing??? n.hmap = hm
 	}
 
 	children := make([]*Node, 0, len(n.Children))

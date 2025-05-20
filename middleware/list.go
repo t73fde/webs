@@ -28,6 +28,9 @@ func NewList(f Functor, lst *List) *List {
 
 // NewListFromMiddleware build a new list from a given Middleware.
 func NewListFromMiddleware(m Middleware) *List {
+	if l, ok := m.(*List); ok {
+		return l
+	}
 	var sentinel List
 	curr := &sentinel
 	for f := range m.Functors() {

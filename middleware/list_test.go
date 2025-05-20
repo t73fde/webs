@@ -51,6 +51,10 @@ func TestList(t *testing.T) {
 	l6 := middleware.NewListFromMiddleware(l5)
 	m.Handle("GET /lst", middleware.Apply(l6, hf))
 
+	if l5 != l6 {
+		t.Error("NewListFromMiddleware is not idempotent")
+	}
+
 	m.Handle("GET /baz", middleware.Apply(c1, hf))
 
 	var tests = []struct {
