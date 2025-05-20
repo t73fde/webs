@@ -32,11 +32,11 @@ func TestList(t *testing.T) {
 	m := http.NewServeMux()
 
 	c1 := middleware.NewChain(fts[0], fts[1])
-	l1 := middleware.NewListFromChain(c1)
+	l1 := middleware.NewListFromMiddleware(c1)
 	m.Handle("GET /{$}", middleware.Apply(l1, hf))
 
 	c2 := c1.Append(fts[2], fts[3])
-	l2 := middleware.NewListFromChain(c2)
+	l2 := middleware.NewListFromMiddleware(c2)
 	m.Handle("GET /foo", middleware.Apply(l2, hf))
 
 	l3 := l2.Append(fts[4])
@@ -47,6 +47,9 @@ func TestList(t *testing.T) {
 
 	l5 := l1.Extend(middleware.NewList(fts[2], nil).Append(fts[3]))
 	m.Handle("GET /ext", middleware.Apply(l5, hf))
+
+	l6 := middleware.NewListFromMiddleware(l5)
+	m.Handle("GET /lst", middleware.Apply(l6, hf))
 
 	m.Handle("GET /baz", middleware.Apply(c1, hf))
 
@@ -62,6 +65,7 @@ func TestList(t *testing.T) {
 		{method: "GET", path: "/bar", exp: ";0;1", status: http.StatusOK},
 		{method: "GET", path: "/baz", exp: ";0;1", status: http.StatusOK},
 		{method: "GET", path: "/ext", exp: ";0;1;2;3", status: http.StatusOK},
+		{method: "GET", path: "/lst", exp: ";0;1;2;3", status: http.StatusOK},
 		{method: "GET", path: "/boo", exp: "", status: http.StatusNotFound},
 	}
 

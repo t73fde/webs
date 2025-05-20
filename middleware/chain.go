@@ -32,9 +32,11 @@ func NewChain(seq ...Functor) Chain {
 	return Chain{seq: slices.Clone(seq)}
 }
 
-// NewChainFromList builds a Chain from a given Middleware List.
-func NewChainFromList(l *List) Chain {
-	return Chain{seq: slices.Collect(l.Functors())}
+// NewChainFromMiddleware builds a Chain from a given Middleware.
+func NewChainFromMiddleware(m Middleware) Chain {
+	seq := slices.Collect(m.Functors())
+	slices.Reverse(seq)
+	return Chain{seq: seq}
 }
 
 // Append middleware to the Chain, resulting in a new Chain.

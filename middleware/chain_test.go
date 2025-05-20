@@ -43,9 +43,12 @@ func TestChain(t *testing.T) {
 	c4 := c1.Extend(middleware.NewChain(fts[5]))
 	m.Handle("GET /bar", middleware.Apply(c4, hf))
 
-	c5 := middleware.NewChainFromList(
+	c5 := middleware.NewChainFromMiddleware(
 		middleware.NewList(fts[1], middleware.NewList(fts[0], nil)))
 	m.Handle("GET /lst", middleware.Apply(c5, hf))
+
+	c6 := middleware.NewChainFromMiddleware(c3)
+	m.Handle("GET /chn", middleware.Apply(c6, hf))
 
 	m.Handle("GET /baz", middleware.Apply(c1, hf))
 
@@ -61,7 +64,8 @@ func TestChain(t *testing.T) {
 		{method: "GET", path: "/bar", exp: ";0;1;5", status: http.StatusOK},
 		{method: "GET", path: "/baz", exp: ";0;1", status: http.StatusOK},
 		{method: "GET", path: "/boo", exp: "", status: http.StatusNotFound},
-		{method: "GET", path: "/lst", exp: ";1;0", status: http.StatusOK},
+		{method: "GET", path: "/lst", exp: ";0;1", status: http.StatusOK},
+		{method: "GET", path: "/chn", exp: ";0;1;2;3;4", status: http.StatusOK},
 	}
 
 	for _, test := range tests {

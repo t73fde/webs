@@ -26,12 +26,16 @@ func NewList(f Functor, lst *List) *List {
 	return &List{f: f, next: lst}
 }
 
-// NewListFromChain build a new list from a Middleware Chain.
-func NewListFromChain(chn Chain) (l *List) {
-	for _, f := range chn.seq {
-		l = NewList(f, l)
+// NewListFromMiddleware build a new list from a given Middleware.
+func NewListFromMiddleware(m Middleware) *List {
+	var sentinel List
+	curr := &sentinel
+	for f := range m.Functors() {
+		l := NewList(f, nil)
+		curr.next = l
+		curr = l
 	}
-	return l
+	return sentinel.next
 }
 
 // Append builds a new list by adding the given middleware to the list.
