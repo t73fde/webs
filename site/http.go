@@ -29,11 +29,7 @@ type Registerer interface {
 
 // Handle registers all named handlers for the whole site.
 func (st *Site) Handle(reg Registerer) {
-	m, found := reg.GetMiddleware(st.Middleware)
-	if !found {
-		m = middleware.NewChain()
-	}
-	st.Root.handle(reg, st.Basepath, m)
+	st.Root.handle(reg, st.Basepath, middleware.Nil{})
 }
 
 // Handle registers all named handlers for the node and its children.
@@ -50,11 +46,7 @@ func (n *Node) handle(reg Registerer, basepath string, m middleware.Middleware) 
 		hPath = upath
 	}
 
-	if nm, found := reg.GetMiddleware(n.Middleware); found {
-		lm := middleware.NewListFromMiddleware(m)
-		lnm := middleware.NewListFromMiddleware(nm)
-		m = lm.Extend(lnm)
-	}
+	m = extendMiddleware(reg, m, n.Middleware)
 
 	methods := n.site.Methods
 	for i, handlerName := range n.Handler {
@@ -69,17 +61,21 @@ func (n *Node) handle(reg Registerer, basepath string, m middleware.Middleware) 
 		if !found {
 			continue
 		}
-		hmw, found := reg.GetMiddleware(n.HandlerMW[i])
-		if found {
-			lm := middleware.NewListFromMiddleware(m)
-			lnm := middleware.NewListFromMiddleware(hmw)
-			m = lm.Extend(lnm)
-		}
-		handler = middleware.Apply(m, handler)
+		hmw := extendMiddleware(reg, m, n.HandlerMW[i])
+		handler = middleware.Apply(hmw, handler)
 		reg.Handle(method+" "+hPath, handler)
 	}
 
 	for _, child := range n.Children {
 		child.handle(reg, upath, m)
 	}
+}
+
+func extendMiddleware(reg Registerer, baseMW middleware.Middleware, name string) middleware.Middleware {
+	if mw, found := reg.GetMiddleware(name); found {
+		lb := middleware.NewListFromMiddleware(baseMW)
+		lmw := middleware.NewListFromMiddleware(mw)
+		return lb.Extend(lmw)
+	}
+	return baseMW
 }

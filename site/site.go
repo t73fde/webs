@@ -26,12 +26,11 @@ import (
 
 // Site contains information about the web site.
 type Site struct {
-	Name       string   // Name of the site.
-	Basepath   string   // Base path, where the site is available.
-	Language   string   // Site default language. Default: "en".
-	Methods    []string // HTTP methods to be used by node handler. Default: GET, POST.
-	Middleware string   // Global middleware.
-	Root       Node     // Root note of the site.
+	Name     string   // Name of the site.
+	Basepath string   // Base path, where the site is available.
+	Language string   // Site default language. Default: "en".
+	Methods  []string // HTTP methods to be used by node handler. Default: GET, POST.
+	Root     Node     // Root note of the site.
 
 	baked     bool
 	basepaths []string
@@ -68,8 +67,6 @@ func (st *Site) Bake() error {
 			http.MethodPost,
 		}
 	}
-
-	st.Middleware = strings.TrimSpace(st.Middleware)
 
 	err := st.Root.bake(st, nil)
 	st.baked = (err == nil)
