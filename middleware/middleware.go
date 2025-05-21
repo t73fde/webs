@@ -22,6 +22,9 @@ import (
 // Functor is a function that transforms an http.Handler into an http.Handler.
 type Functor func(http.Handler) http.Handler
 
+// NilFunctor is a Functor that does nothing.
+func NilFunctor(h http.Handler) http.Handler { return h }
+
 // Functors returns an iterator with only the given Functor. This allows to
 // treat the functor as a Middleware.
 func (f Functor) Functors() iter.Seq[Functor] {

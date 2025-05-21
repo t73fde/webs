@@ -25,7 +25,7 @@ import (
 // DefaultHeaderKey specifies the HTTP header key, where the request ID should be stored.
 const DefaultHeaderKey = "X-Request-Id"
 
-// Config stores all configutation to build a Functor.
+// Config stores all configuration to build a Functor.
 type Config struct {
 	HeaderKey    string
 	Generator    *snow.Generator
