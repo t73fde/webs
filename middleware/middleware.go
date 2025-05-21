@@ -44,3 +44,10 @@ func Apply(m Middleware, h http.Handler) http.Handler {
 	}
 	return h
 }
+
+// Nil is a middleware that does nothing.
+type Nil struct{}
+
+// Functors returns an iterator of all Functors to apply. For this middleware:
+// nothing is returned.
+func (Nil) Functors() iter.Seq[Functor] { return func(func(Functor) bool) {} }

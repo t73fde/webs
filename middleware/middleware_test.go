@@ -36,6 +36,7 @@ func TestMiddleware(t *testing.T) {
 	m.Handle("GET /{$}", middleware.Apply(fts[0], hf))
 	m.Handle("GET /foo", middleware.Apply(fts[1], hf))
 	m.Handle("GET /baz", middleware.Apply(fts[2], hf))
+	m.Handle("GET /nil", middleware.Apply(middleware.Nil{}, hf))
 
 	var tests = []struct {
 		method string
@@ -46,6 +47,7 @@ func TestMiddleware(t *testing.T) {
 		{method: "GET", path: "/", exp: ";0", status: http.StatusOK},
 		{method: "GET", path: "/foo", exp: ";1", status: http.StatusOK},
 		{method: "GET", path: "/baz", exp: ";2", status: http.StatusOK},
+		{method: "GET", path: "/nil", exp: "", status: http.StatusOK},
 		{method: "GET", path: "/boo", exp: "", status: http.StatusNotFound},
 	}
 
