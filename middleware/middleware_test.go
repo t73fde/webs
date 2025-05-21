@@ -38,39 +38,14 @@ func TestMiddleware(t *testing.T) {
 	m.Handle("GET /baz", middleware.Apply(fts[2], hf))
 	m.Handle("GET /nil", middleware.Apply(middleware.Nil{}, hf))
 
-	var tests = []struct {
-		method string
-		path   string
-		exp    string
-		status int
-	}{
+	var tests = Testcases{
 		{method: "GET", path: "/", exp: ";0", status: http.StatusOK},
 		{method: "GET", path: "/foo", exp: ";1", status: http.StatusOK},
 		{method: "GET", path: "/baz", exp: ";2", status: http.StatusOK},
 		{method: "GET", path: "/nil", exp: "", status: http.StatusOK},
 		{method: "GET", path: "/boo", exp: "", status: http.StatusNotFound},
 	}
-
-	for _, test := range tests {
-		used = ""
-
-		r, err := http.NewRequest(test.method, test.path, nil)
-		if err != nil {
-			t.Errorf("NewRequest: %s", err)
-		}
-
-		rr := httptest.NewRecorder()
-		m.ServeHTTP(rr, r)
-
-		got := rr.Result()
-		if status := got.StatusCode; status != test.status {
-			t.Errorf("%s %s: expected status %d but was %d", test.method, test.path, test.status, status)
-		}
-
-		if used != test.exp {
-			t.Errorf("%s %s: middleware used: expected %q; got %q", test.method, test.path, test.exp, used)
-		}
-	}
+	tests.Run(t, &used, m)
 }
 
 func makeFunctors(n int, used *string) iter.Seq[middleware.Functor] {
@@ -85,6 +60,38 @@ func makeFunctors(n int, used *string) iter.Seq[middleware.Functor] {
 			if !yield(m) {
 				return
 			}
+		}
+	}
+}
+
+type Testcases []struct {
+	method string
+	path   string
+	exp    string
+	status int
+}
+
+func (tests Testcases) Run(t *testing.T, used *string, m *http.ServeMux) {
+	t.Helper()
+
+	for _, test := range tests {
+		*used = ""
+
+		r, err := http.NewRequest(test.method, test.path, nil)
+		if err != nil {
+			t.Errorf("NewRequest: %s", err)
+		}
+
+		rr := httptest.NewRecorder()
+		m.ServeHTTP(rr, r)
+
+		got := rr.Result()
+		if status := got.StatusCode; status != test.status {
+			t.Errorf("%s %s: expected status %d but was %d", test.method, test.path, test.status, status)
+		}
+
+		if *used != test.exp {
+			t.Errorf("%s %s: middleware used: expected %q; got %q", test.method, test.path, test.exp, *used)
 		}
 	}
 }

@@ -52,12 +52,7 @@ func TestChain(t *testing.T) {
 
 	m.Handle("GET /baz", middleware.Apply(c1, hf))
 
-	var tests = []struct {
-		method string
-		path   string
-		exp    string
-		status int
-	}{
+	var tests = Testcases{
 		{method: "GET", path: "/", exp: ";0;1", status: http.StatusOK},
 		{method: "GET", path: "/foo", exp: ";0;1;2;3", status: http.StatusOK},
 		{method: "GET", path: "/nested/foo", exp: ";0;1;2;3;4", status: http.StatusOK},
@@ -67,27 +62,7 @@ func TestChain(t *testing.T) {
 		{method: "GET", path: "/lst", exp: ";0;1", status: http.StatusOK},
 		{method: "GET", path: "/chn", exp: ";0;1;2;3;4", status: http.StatusOK},
 	}
-
-	for _, test := range tests {
-		used = ""
-
-		r, err := http.NewRequest(test.method, test.path, nil)
-		if err != nil {
-			t.Errorf("NewRequest: %s", err)
-		}
-
-		rr := httptest.NewRecorder()
-		m.ServeHTTP(rr, r)
-
-		got := rr.Result()
-		if status := got.StatusCode; status != test.status {
-			t.Errorf("%s %s: expected status %d but was %d", test.method, test.path, test.status, status)
-		}
-
-		if used != test.exp {
-			t.Errorf("%s %s: middleware used: expected %q; got %q", test.method, test.path, test.exp, used)
-		}
-	}
+	tests.Run(t, &used, m)
 }
 
 func TestChainFunctors(t *testing.T) {
