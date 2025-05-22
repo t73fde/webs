@@ -244,12 +244,19 @@ func (lp *Provider) Logout() http.Handler {
 	})
 }
 
-type sessionKeytype struct{}
-
-var sessionKey sessionKeytype
-
 func setSession(ctx context.Context, session *SessionInfo) context.Context {
-	return context.WithValue(ctx, sessionKey, session)
+	return context.WithValue(ctx, sessionKeyType{}, session)
+}
+
+type sessionKeyType struct{}
+
+// Session returns a reference to the current user session, or nil if there is
+// no session.
+func Session(ctx context.Context) *SessionInfo {
+	if session, ok := ctx.Value(sessionKeyType{}).(*SessionInfo); ok {
+		return session
+	}
+	return nil
 }
 
 // EnrichUserInfo is a middleware that retrieves the user info based on the
@@ -281,15 +288,6 @@ func (lp *Provider) Required(next http.Handler) http.Handler {
 			lp.loginRedirect(w, r)
 		}
 	})
-}
-
-// Session returns a reference to the current user session, or nil if there is
-// no session.
-func Session(ctx context.Context) *SessionInfo {
-	if session, ok := ctx.Value(sessionKey).(*SessionInfo); ok {
-		return session
-	}
-	return nil
 }
 
 var errInvalidCookie = errors.New("invalid cookie")
