@@ -24,7 +24,8 @@ import (
 // Checker test an HTTP request for some precondition.
 type Checker interface {
 	// Check the precondition of an request. If the precondition is satisfied,
-	// return a Context and a true value. The request may be modified too, e.g.
+	// return a Context and a true value. The Context may be nil. In this case,
+	// no new request will be created. The request may be modified too, e.g.
 	// header data. Otherwise return any Context and a false value. In
 	// addition, the Checker must write an error message to the ResponseWriter.
 	Check(http.ResponseWriter, *http.Request) (context.Context, bool)
@@ -43,7 +44,7 @@ func Build(c Checker) middleware.Functor {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if ctx, ok := c.Check(w, r); ok {
-				if ctx != r.Context() {
+				if ctx != nil && ctx != r.Context() {
 					r = r.WithContext(ctx)
 				}
 				next.ServeHTTP(w, r)
