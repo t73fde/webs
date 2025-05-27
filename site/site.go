@@ -131,7 +131,10 @@ type Node struct {
 	site     *Site
 	parent   *Node
 	pathSpec pathSpec
-	hmap     map[string]string
+
+	// hmap and mwmap are needed, because when n.SetHandler/SetHandlerMW is called,
+	// n.site is not yet set.
+	hmap, mwmap map[string]string
 }
 
 // pathSpec determines the type of the nodepath.
@@ -171,11 +174,26 @@ func (n *Node) GetTitle() string {
 
 // SetHandler set the given handler name for the given method.
 func (n *Node) SetHandler(method, handler string) {
-	if hm := n.hmap; hm != nil {
+	if st := n.site; st != nil {
+		pos := n.methodPos(st, method)
+		n.Handler[pos] = handler
+	} else if hm := n.hmap; hm != nil {
 		hm[method] = handler
-		return
+	} else {
+		n.hmap = map[string]string{method: handler}
 	}
-	n.hmap = map[string]string{method: handler}
+}
+
+// SetHandlerMW set the given middelware name for the given method.
+func (n *Node) SetHandlerMW(method, mw string) {
+	if st := n.site; st != nil {
+		pos := n.methodPos(st, method)
+		n.HandlerMW[pos] = mw
+	} else if mwm := n.mwmap; mwm != nil {
+		mwm[method] = mw
+	} else {
+		n.mwmap = map[string]string{method: mw}
+	}
 }
 
 // SetExtra set a key to a value.
@@ -288,23 +306,18 @@ func (n *Node) bake(st *Site, p *Node) error {
 	n.parent = p
 
 	if hm := n.hmap; hm != nil {
-		hsl := make([]string, len(st.Methods))
 		for m, h := range hm {
-			if pos := slices.Index(st.Methods, m); pos >= 0 {
-				hsl[pos] = h
-			}
+			pos := n.methodPos(st, m)
+			n.Handler[pos] = h
 		}
-		n.Handler = hsl
-	} else if numHandler := len(n.Handler); numHandler > 0 {
-		hm = make(map[string]string, numHandler)
-		numMethods := len(st.Methods)
-		for i, h := range n.Handler {
-			if i >= numMethods {
-				break
-			}
-			hm[st.Methods[i]] = h
+		n.hmap = nil
+	}
+	if mwm := n.mwmap; mwm != nil {
+		for m, mw := range mwm {
+			pos := n.methodPos(st, m)
+			n.HandlerMW[pos] = mw
 		}
-		//???missing??? n.hmap = hm
+		n.mwmap = nil
 	}
 
 	children := make([]*Node, 0, len(n.Children))
@@ -320,6 +333,21 @@ func (n *Node) bake(st *Site, p *Node) error {
 	}
 	n.Children = slices.Clip(children)
 	return nil
+}
+
+func (n *Node) methodPos(st *Site, method string) int {
+	pos := slices.Index(st.Methods, method)
+	if pos < 0 {
+		pos = len(st.Methods)
+		st.Methods = append(st.Methods, method)
+	}
+	for len(n.Handler) <= pos {
+		n.Handler = append(n.Handler, "")
+	}
+	for len(n.HandlerMW) <= pos {
+		n.HandlerMW = append(n.HandlerMW, "")
+	}
+	return pos
 }
 
 // BuilderFor returns an URL builder for a specific node.
