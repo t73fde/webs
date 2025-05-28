@@ -34,13 +34,13 @@ func (c *Config) Build() middleware.Functor {
 	constMap := maps.Clone(c.Constants)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
 			header := w.Header()
 			for k, v := range constMap {
 				if _, found := header[k]; !found {
 					header.Add(k, v)
 				}
 			}
+			next.ServeHTTP(w, r)
 		})
 	}
 }
