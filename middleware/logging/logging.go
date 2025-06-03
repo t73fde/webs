@@ -19,6 +19,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"t73f.de/r/webs/ip"
 	"t73f.de/r/webs/middleware"
 )
 
@@ -27,6 +28,7 @@ type ReqConfig struct {
 	Logger      *slog.Logger
 	Level       slog.Level
 	Message     string
+	WithRemote  bool
 	WithHeaders bool
 }
 
@@ -41,10 +43,29 @@ func (c *ReqConfig) Build() middleware.Functor {
 	if msg == "" {
 		msg = "REQ"
 	}
+	if c.WithRemote {
+		if c.WithHeaders {
+			return func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL,
+						"remote", ip.GetRemoteAddr(r), "header", r.Header)
+					next.ServeHTTP(w, r)
+				})
+			}
+		}
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL,
+					"remote", ip.GetRemoteAddr(r))
+				next.ServeHTTP(w, r)
+			})
+		}
+	}
 	if c.WithHeaders {
 		return func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL, "header", r.Header)
+				logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL,
+					"header", r.Header)
 				next.ServeHTTP(w, r)
 			})
 		}

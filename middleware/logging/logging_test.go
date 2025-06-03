@@ -33,14 +33,16 @@ func TestRequestLogging(t *testing.T) {
 	mux := http.NewServeMux()
 
 	tests := testcases{
-		{"/foo", nil, false, "abc", nil},
-		{"/bar", logger, false, "REQ", []string{"method", "GET", "url", "/bar"}},
-		{"/baz", logger, true, "REQ", []string{"method", "GET", "url", "/baz", "header", "map[]"}},
+		{"/foo", nil, false, false, "abc", nil},
+		{"/bar", logger, false, false, "REQ", []string{"method", "GET", "url", "/bar"}},
+		{"/baz", logger, false, true, "REQ", []string{"method", "GET", "url", "/baz", "header", "map[]"}},
+		{"/rar", logger, true, false, "REQ", []string{"method", "GET", "url", "/rar", "remote", ""}},
+		{"/raz", logger, true, true, "REQ", []string{"method", "GET", "url", "/raz", "remote", "", "header", "map[]"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
 			logh.records = nil
-			cfg := logging.ReqConfig{Logger: tc.logger, WithHeaders: tc.withHeader}
+			cfg := logging.ReqConfig{Logger: tc.logger, WithRemote: tc.withRemote, WithHeaders: tc.withHeader}
 			mux.Handle("GET "+tc.path, cfg.Build()(hf))
 
 			r, err := http.NewRequest("GET", tc.path, nil)
@@ -84,10 +86,10 @@ func TestResponseLogging(t *testing.T) {
 	mux := http.NewServeMux()
 
 	tests := testcases{
-		{"/foo", nil, false, "abc", nil},
-		{"/bar", logger, false, "RESP", []string{
+		{"/foo", nil, false, false, "abc", nil},
+		{"/bar", logger, false, false, "RESP", []string{
 			"method", "GET", "url", "/bar", "status", "200", "length", "5"}},
-		{"/baz", logger, true, "RESP", []string{
+		{"/baz", logger, false, true, "RESP", []string{
 			"method", "GET", "url", "/baz", "status", "200", "length", "5", "header", "map[]"}},
 	}
 	for _, tc := range tests {
@@ -129,6 +131,7 @@ func TestResponseLogging(t *testing.T) {
 type testcases []struct {
 	path       string
 	logger     *slog.Logger
+	withRemote bool
 	withHeader bool
 	expMsg     string
 	expAttrs   []string
