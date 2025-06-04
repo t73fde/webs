@@ -36,8 +36,8 @@ func TestRequestLogging(t *testing.T) {
 		{"/foo", nil, false, false, "abc", nil},
 		{"/bar", logger, false, false, "REQ", []string{"method", "GET", "url", "/bar"}},
 		{"/baz", logger, false, true, "REQ", []string{"method", "GET", "url", "/baz", "header", "map[]"}},
-		{"/rar", logger, true, false, "REQ", []string{"method", "GET", "url", "/rar", "remote", ""}},
-		{"/raz", logger, true, true, "REQ", []string{"method", "GET", "url", "/raz", "remote", "", "header", "map[]"}},
+		{"/rar", logger, true, false, "REQ", []string{"method", "GET", "url", "/rar", "remote", "127.0.0.1:54321"}},
+		{"/raz", logger, true, true, "REQ", []string{"method", "GET", "url", "/raz", "remote", "127.0.0.1:54321", "header", "map[]"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
@@ -49,6 +49,7 @@ func TestRequestLogging(t *testing.T) {
 			if err != nil {
 				t.Errorf("NewRequest: %s", err)
 			}
+			r.RemoteAddr = "127.0.0.1:54321"
 			rr := httptest.NewRecorder()
 			mux.ServeHTTP(rr, r)
 
@@ -67,7 +68,12 @@ func TestRequestLogging(t *testing.T) {
 				t.Errorf("message %q expected, got: %q", tc.expMsg, got)
 			}
 			attrs := []string{}
-			rec.Attrs(func(a slog.Attr) bool { attrs = append(attrs, a.Key, a.Value.String()); return true })
+			rec.Attrs(func(a slog.Attr) bool {
+				if !a.Equal(slog.Attr{}) {
+					attrs = append(attrs, a.Key, a.Value.String())
+				}
+				return true
+			})
 			if !slices.Equal(tc.expAttrs, attrs) {
 				t.Errorf("attrs %v expected, got %v", tc.expAttrs, attrs)
 			}
@@ -87,9 +93,9 @@ func TestResponseLogging(t *testing.T) {
 
 	tests := testcases{
 		{"/foo", nil, false, false, "abc", nil},
-		{"/bar", logger, false, false, "RESP", []string{
+		{"/bar", logger, false, false, "RSP", []string{
 			"method", "GET", "url", "/bar", "status", "200", "length", "5"}},
-		{"/baz", logger, false, true, "RESP", []string{
+		{"/baz", logger, false, true, "RSP", []string{
 			"method", "GET", "url", "/baz", "status", "200", "length", "5", "header", "map[]"}},
 	}
 	for _, tc := range tests {
@@ -120,7 +126,12 @@ func TestResponseLogging(t *testing.T) {
 				t.Errorf("message %q expected, got: %q", tc.expMsg, got)
 			}
 			attrs := []string{}
-			rec.Attrs(func(a slog.Attr) bool { attrs = append(attrs, a.Key, a.Value.String()); return true })
+			rec.Attrs(func(a slog.Attr) bool {
+				if !a.Equal(slog.Attr{}) {
+					attrs = append(attrs, a.Key, a.Value.String())
+				}
+				return true
+			})
 			if !slices.Equal(tc.expAttrs, attrs) {
 				t.Errorf("attrs expected:\n%v, got:\n%v", tc.expAttrs, attrs)
 			}

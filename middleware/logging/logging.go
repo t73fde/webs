@@ -43,36 +43,23 @@ func (c *ReqConfig) Build() middleware.Functor {
 	if msg == "" {
 		msg = "REQ"
 	}
-	if c.WithRemote {
-		if c.WithHeaders {
-			return func(next http.Handler) http.Handler {
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL,
-						"remote", ip.GetRemoteAddr(r), "header", r.Header)
-					next.ServeHTTP(w, r)
-				})
-			}
-		}
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL,
-					"remote", ip.GetRemoteAddr(r))
-				next.ServeHTTP(w, r)
-			})
-		}
-	}
-	if c.WithHeaders {
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL,
-					"header", r.Header)
-				next.ServeHTTP(w, r)
-			})
-		}
-	}
+	withRemote, withHeaders := c.WithRemote, c.WithHeaders
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logger.Log(r.Context(), level, msg, "method", r.Method, "url", r.URL)
+			var remoteAttr, headerAttr slog.Attr
+			if withRemote {
+				remoteValue := ip.GetRemoteAddr(r)
+				if remoteValue != "" {
+					remoteAttr = slog.String("remote", remoteValue)
+				}
+			}
+			if withHeaders {
+				headerAttr = slog.Any("header", r.Header)
+			}
+
+			logger.LogAttrs(r.Context(), level, msg,
+				slog.String("method", r.Method), slog.Any("url", r.URL),
+				remoteAttr, headerAttr)
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -95,27 +82,24 @@ func (c *RespConfig) Build() middleware.Functor {
 	level := c.Level
 	msg := c.Message
 	if msg == "" {
-		msg = "RESP"
+		msg = "RSP"
 	}
-	if c.WithHeaders {
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logw := logResponseWriter{w: w}
-				next.ServeHTTP(&logw, r)
-				logger.Log(r.Context(), level, msg,
-					"method", r.Method, "url", r.URL,
-					"status", logw.code, "length", logw.length,
-					"header", logw.Header())
-			})
-		}
-	}
+	withHeaders := c.WithHeaders
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			logw := logResponseWriter{w: w}
 			next.ServeHTTP(&logw, r)
-			logger.Log(r.Context(), level, msg,
-				"method", r.Method, "url", r.URL,
-				"status", logw.code, "length", logw.length)
+
+			var headerAttr slog.Attr
+			if withHeaders {
+				headerAttr = slog.Any("header", logw.Header())
+			}
+
+			logger.LogAttrs(r.Context(), level, msg,
+				slog.String("method", r.Method), slog.Any("url", r.URL),
+				slog.Int("status", logw.code), slog.Int("length", logw.length),
+				headerAttr)
+
 		})
 	}
 }
