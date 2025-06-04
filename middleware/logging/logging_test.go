@@ -23,27 +23,41 @@ import (
 	"testing"
 
 	"t73f.de/r/webs/middleware/logging"
+	"t73f.de/r/webs/middleware/reqid"
+	"t73f.de/r/zero/snow"
 )
 
 func TestRequestLogging(t *testing.T) {
 	logh := testLoggingHandler{}
 	logger := slog.New(&logh)
 
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	})
 	mux := http.NewServeMux()
 
 	tests := testcases{
-		{"/foo", nil, false, false, "abc", nil},
-		{"/bar", logger, false, false, "REQ", []string{"method", "GET", "url", "/bar"}},
-		{"/baz", logger, false, true, "REQ", []string{"method", "GET", "url", "/baz", "header", "map[]"}},
-		{"/rar", logger, true, false, "REQ", []string{"method", "GET", "url", "/rar", "remote", "127.0.0.1:54321"}},
-		{"/raz", logger, true, true, "REQ", []string{"method", "GET", "url", "/raz", "remote", "127.0.0.1:54321", "header", "map[]"}},
+		{"/foo", nil, false, false, false, "abc", nil},
+		{"/rid", logger, true, false, false, "REQ", []string{"method", "GET", "url", "/rid"}},
+		{"/bar", logger, false, false, false, "REQ", []string{"method", "GET", "url", "/bar"}},
+		{"/baz", logger, false, false, true, "REQ", []string{"method", "GET", "url", "/baz", "header", "map[]"}},
+		{"/rar", logger, false, true, false, "REQ", []string{"method", "GET", "url", "/rar", "remote", "127.0.0.1:54321"}},
+		{"/raz", logger, false, true, true, "REQ", []string{"method", "GET", "url", "/raz", "remote", "127.0.0.1:54321", "header", "map[]"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
+			handler := http.Handler(hf)
 			logh.records = nil
-			cfg := logging.ReqConfig{Logger: tc.logger, WithRemote: tc.withRemote, WithHeaders: tc.withHeader}
-			mux.Handle("GET "+tc.path, cfg.Build()(hf))
+			cfg := logging.ReqConfig{
+				Logger:        tc.logger,
+				WithRequestID: tc.withRequestID,
+				WithRemote:    tc.withRemote,
+				WithHeaders:   tc.withHeader}
+			handler = cfg.Build()(handler)
+			if tc.withRequestID {
+				reqidcfg := reqid.Config{WithContext: true}
+				handler = reqidcfg.Build()(handler)
+			}
+			mux.Handle("GET "+tc.path, handler)
 
 			r, err := http.NewRequest("GET", tc.path, nil)
 			if err != nil {
@@ -68,12 +82,18 @@ func TestRequestLogging(t *testing.T) {
 				t.Errorf("message %q expected, got: %q", tc.expMsg, got)
 			}
 			attrs := []string{}
+			key := snow.Invalid
 			rec.Attrs(func(a slog.Attr) bool {
-				if !a.Equal(slog.Attr{}) {
+				if tc.withRequestID && a.Key == logging.DefaultRequestIDKey {
+					key = snow.MustParse(a.Value.String())
+				} else if !a.Equal(slog.Attr{}) {
 					attrs = append(attrs, a.Key, a.Value.String())
 				}
 				return true
 			})
+			if tc.withRequestID && key.IsInvalid() {
+				t.Error("no request id set")
+			}
 			if !slices.Equal(tc.expAttrs, attrs) {
 				t.Errorf("attrs %v expected, got %v", tc.expAttrs, attrs)
 			}
@@ -92,17 +112,28 @@ func TestResponseLogging(t *testing.T) {
 	mux := http.NewServeMux()
 
 	tests := testcases{
-		{"/foo", nil, false, false, "abc", nil},
-		{"/bar", logger, false, false, "RSP", []string{
+		{"/foo", nil, false, false, false, "abc", nil},
+		{"/rid", logger, true, false, false, "RSP", []string{
+			"method", "GET", "url", "/rid", "status", "200", "length", "5"}},
+		{"/bar", logger, false, false, false, "RSP", []string{
 			"method", "GET", "url", "/bar", "status", "200", "length", "5"}},
-		{"/baz", logger, false, true, "RSP", []string{
+		{"/baz", logger, false, false, true, "RSP", []string{
 			"method", "GET", "url", "/baz", "status", "200", "length", "5", "header", "map[]"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
+			handler := http.Handler(hf)
 			logh.records = nil
-			cfg := logging.RespConfig{Logger: tc.logger, WithHeaders: tc.withHeader}
-			mux.Handle("GET "+tc.path, cfg.Build()(hf))
+			cfg := logging.RespConfig{
+				Logger:        tc.logger,
+				WithRequestID: tc.withRequestID,
+				WithHeaders:   tc.withHeader}
+			handler = cfg.Build()(handler)
+			if tc.withRequestID {
+				reqidcfg := reqid.Config{WithContext: true}
+				handler = reqidcfg.Build()(handler)
+			}
+			mux.Handle("GET "+tc.path, handler)
 
 			r, err := http.NewRequest("GET", tc.path, nil)
 			if err != nil {
@@ -126,12 +157,18 @@ func TestResponseLogging(t *testing.T) {
 				t.Errorf("message %q expected, got: %q", tc.expMsg, got)
 			}
 			attrs := []string{}
+			key := snow.Invalid
 			rec.Attrs(func(a slog.Attr) bool {
-				if !a.Equal(slog.Attr{}) {
+				if tc.withRequestID && a.Key == logging.DefaultRequestIDKey {
+					key = snow.MustParse(a.Value.String())
+				} else if !a.Equal(slog.Attr{}) {
 					attrs = append(attrs, a.Key, a.Value.String())
 				}
 				return true
 			})
+			if tc.withRequestID && key.IsInvalid() {
+				t.Error("no request id set")
+			}
 			if !slices.Equal(tc.expAttrs, attrs) {
 				t.Errorf("attrs expected:\n%v, got:\n%v", tc.expAttrs, attrs)
 			}
@@ -140,12 +177,13 @@ func TestResponseLogging(t *testing.T) {
 }
 
 type testcases []struct {
-	path       string
-	logger     *slog.Logger
-	withRemote bool
-	withHeader bool
-	expMsg     string
-	expAttrs   []string
+	path          string
+	logger        *slog.Logger
+	withRequestID bool
+	withRemote    bool
+	withHeader    bool
+	expMsg        string
+	expAttrs      []string
 }
 
 type testLoggingHandler struct {

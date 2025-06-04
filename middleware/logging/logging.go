@@ -21,15 +21,20 @@ import (
 
 	"t73f.de/r/webs/ip"
 	"t73f.de/r/webs/middleware"
+	"t73f.de/r/webs/middleware/reqid"
 )
+
+// DefaultRequestIDKey is the default name of the request id log attribute.
+const DefaultRequestIDKey = "id"
 
 // ReqConfig stores all configuration data to build a request logger.
 type ReqConfig struct {
-	Logger      *slog.Logger
-	Level       slog.Level
-	Message     string
-	WithRemote  bool
-	WithHeaders bool
+	Logger        *slog.Logger
+	Level         slog.Level
+	Message       string
+	WithRequestID bool
+	WithRemote    bool
+	WithHeaders   bool
 }
 
 // Build the Functor from the configuration.
@@ -43,10 +48,13 @@ func (c *ReqConfig) Build() middleware.Functor {
 	if msg == "" {
 		msg = "REQ"
 	}
-	withRemote, withHeaders := c.WithRemote, c.WithHeaders
+	withRequestID, withRemote, withHeaders := c.WithRequestID, c.WithRemote, c.WithHeaders
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var remoteAttr, headerAttr slog.Attr
+			var requestIDAttr, remoteAttr, headerAttr slog.Attr
+			if withRequestID {
+				requestIDAttr = slog.Any(DefaultRequestIDKey, reqid.GetRequestID(r.Context()))
+			}
 			if withRemote {
 				remoteValue := ip.GetRemoteAddr(r)
 				if remoteValue != "" {
@@ -57,7 +65,7 @@ func (c *ReqConfig) Build() middleware.Functor {
 				headerAttr = slog.Any("header", r.Header)
 			}
 
-			logger.LogAttrs(r.Context(), level, msg,
+			logger.LogAttrs(r.Context(), level, msg, requestIDAttr,
 				slog.String("method", r.Method), slog.Any("url", r.URL),
 				remoteAttr, headerAttr)
 			next.ServeHTTP(w, r)
@@ -67,10 +75,11 @@ func (c *ReqConfig) Build() middleware.Functor {
 
 // RespConfig stores all confguration data to build a response logger.
 type RespConfig struct {
-	Logger      *slog.Logger
-	Level       slog.Level
-	Message     string
-	WithHeaders bool
+	Logger        *slog.Logger
+	Level         slog.Level
+	Message       string
+	WithRequestID bool
+	WithHeaders   bool
 }
 
 // Build the Functor from the configuration.
@@ -84,18 +93,21 @@ func (c *RespConfig) Build() middleware.Functor {
 	if msg == "" {
 		msg = "RSP"
 	}
-	withHeaders := c.WithHeaders
+	withRequestID, withHeaders := c.WithRequestID, c.WithHeaders
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			logw := logResponseWriter{w: w}
 			next.ServeHTTP(&logw, r)
 
-			var headerAttr slog.Attr
+			var requestIDAttr, headerAttr slog.Attr
+			if withRequestID {
+				requestIDAttr = slog.Any(DefaultRequestIDKey, reqid.GetRequestID(r.Context()))
+			}
 			if withHeaders {
 				headerAttr = slog.Any("header", logw.Header())
 			}
 
-			logger.LogAttrs(r.Context(), level, msg,
+			logger.LogAttrs(r.Context(), level, msg, requestIDAttr,
 				slog.String("method", r.Method), slog.Any("url", r.URL),
 				slog.Int("status", logw.code), slog.Int("length", logw.length),
 				headerAttr)
