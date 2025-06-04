@@ -16,6 +16,7 @@
 package reqid
 
 import (
+	"context"
 	"net/http"
 
 	"t73f.de/r/webs/middleware"
@@ -30,6 +31,7 @@ type Config struct {
 	HeaderKey    string
 	Generator    *snow.Generator
 	AppID        uint
+	WithContext  bool
 	WithResponse bool
 }
 
@@ -46,10 +48,14 @@ func (c *Config) Build() middleware.Functor {
 	if m := gen.MaxAppID(); appID > m {
 		appID = 0
 	}
+	withContext := c.WithContext
 	withResponse := c.WithResponse
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := gen.Create(appID)
+			if withContext {
+				r = r.WithContext(context.WithValue(r.Context(), ctxKeyType{}, id))
+			}
 			s := id.String()
 			r.Header.Set(headerKey, s)
 			if withResponse {
@@ -58,4 +64,14 @@ func (c *Config) Build() middleware.Functor {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+type ctxKeyType struct{}
+
+// GetRequestID returns the request identification injected by the middleware functor.
+func GetRequestID(ctx context.Context) snow.Key {
+	if id, ok := ctx.Value(ctxKeyType{}).(snow.Key); ok {
+		return id
+	}
+	return snow.Invalid
 }
