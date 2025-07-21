@@ -81,7 +81,7 @@ func (st *Site) Node(id string) *Node {
 	if nodes := st.nodes; nodes != nil {
 		return nodes[id]
 	}
-	return nil
+	return st.Root.nodeByID(id)
 }
 
 // BestNode returns the node that matches the given path at best. If an
@@ -216,6 +216,18 @@ func (n *Node) GetExtra(key string) (string, bool) {
 
 // Parent returns the superior / parent node (or nil, if root node).
 func (n *Node) Parent() *Node { return n.parent }
+
+func (n *Node) nodeByID(id string) *Node {
+	if n.ID == id {
+		return n
+	}
+	for _, child := range n.Children {
+		if result := child.nodeByID(id); result != nil {
+			return result
+		}
+	}
+	return nil
+}
 
 // BestNode returns the node that matches the given relative path the best.
 // It never returns nil.
