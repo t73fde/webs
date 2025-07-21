@@ -31,8 +31,7 @@ func TestRequestLogging(t *testing.T) {
 	logh := testLoggingHandler{}
 	logger := slog.New(&logh)
 
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	mux := http.NewServeMux()
 
 	tests := testcases{
@@ -105,7 +104,7 @@ func TestResponseLogging(t *testing.T) {
 	logh := testLoggingHandler{}
 	logger := slog.New(&logh)
 
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	hf := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(200)
 		_, _ = io.WriteString(w, "Hello")
 	})
@@ -190,7 +189,7 @@ type testLoggingHandler struct {
 	records []slog.Record
 }
 
-func (h *testLoggingHandler) Enabled(_ context.Context, level slog.Level) bool {
+func (h *testLoggingHandler) Enabled(context.Context, slog.Level) bool {
 	return true
 }
 
@@ -199,10 +198,10 @@ func (h *testLoggingHandler) Handle(_ context.Context, r slog.Record) error {
 	return nil
 }
 
-func (h *testLoggingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (h *testLoggingHandler) WithAttrs([]slog.Attr) slog.Handler {
 	return h // für Einfachheit, kein Attr-Support
 }
 
-func (h *testLoggingHandler) WithGroup(name string) slog.Handler {
+func (h *testLoggingHandler) WithGroup(string) slog.Handler {
 	return h // keine Gruppen
 }

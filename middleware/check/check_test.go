@@ -89,13 +89,13 @@ func TestChecker(t *testing.T) {
 const expErrCode = http.StatusBadRequest
 const expOKCode = http.StatusNoContent
 
-func checkFalse(w http.ResponseWriter, r *http.Request) (context.Context, bool) {
+func checkFalse(w http.ResponseWriter, _ *http.Request) (context.Context, bool) {
 	w.WriteHeader(expErrCode)
 	return nil, false
 }
-func checkTrue(w http.ResponseWriter, r *http.Request) (context.Context, bool) {
+func checkTrue(_ http.ResponseWriter, r *http.Request) (context.Context, bool) {
 	return r.Context(), true
 }
-func checkTrueCtx(w http.ResponseWriter, r *http.Request) (context.Context, bool) {
+func checkTrueCtx(_ http.ResponseWriter, r *http.Request) (context.Context, bool) {
 	return context.WithValue(r.Context(), ctxKey, ctxVal), true
 }

@@ -28,7 +28,7 @@ func TestList(t *testing.T) {
 	used := ""
 
 	fts := slices.Collect(makeFunctors(6, &used))
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	m := http.NewServeMux()
 
 	c1 := middleware.NewChain(fts[0], fts[1])
@@ -80,7 +80,7 @@ func TestListFunctors(t *testing.T) {
 		break
 	}
 
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	m := http.NewServeMux()
 	m.Handle("GET /foo", val(hf))
 	m.Handle("GET /bar", fts[0](hf))

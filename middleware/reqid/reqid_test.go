@@ -29,7 +29,7 @@ func TestSimpleReqID(t *testing.T) {
 	reqidcfg.AppID = 65535
 
 	rmw := reqidcfg.Build()
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	handler := func(_ http.ResponseWriter, r *http.Request) {
 		rqid = r.Header.Get(reqid.DefaultHeaderKey)
 		rqidctx = reqid.GetRequestID(r.Context())
 	}

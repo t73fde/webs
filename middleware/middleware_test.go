@@ -30,7 +30,7 @@ func TestMiddleware(t *testing.T) {
 	used := ""
 
 	fts := slices.Collect(makeFunctors(3, &used))
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	m := http.NewServeMux()
 
 	m.Handle("GET /{$}", middleware.Apply(fts[0], hf))

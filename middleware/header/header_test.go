@@ -24,7 +24,7 @@ import (
 )
 
 func TestHeader(t *testing.T) {
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	mux := http.NewServeMux()
 
 	var cnst map[string]string
