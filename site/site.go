@@ -108,7 +108,7 @@ func (st *Site) MakeURLBuilder() *urlbuilder.URLBuilder {
 
 // BuilderFor returns an URL builder initialized with the full path of the
 // node with the given identifier.
-func (st *Site) BuilderFor(nodeID string, args ...string) *urlbuilder.URLBuilder {
+func (st *Site) BuilderFor(nodeID string, args ...any) *urlbuilder.URLBuilder {
 	n := st.Node(nodeID)
 	if n == nil {
 		return nil
@@ -363,14 +363,14 @@ func (n *Node) methodPos(st *Site, method string) int {
 }
 
 // BuilderFor returns an URL builder for a specific node.
-func (n *Node) BuilderFor(args ...string) *urlbuilder.URLBuilder {
+func (n *Node) BuilderFor(args ...any) *urlbuilder.URLBuilder {
 	pos := 0
 	ancestors := []string{}
 	for a := n; a != nil; a = a.parent {
 		if pe := a.Nodepath; pe != "" {
 			if pe[0] == '{' && pe[len(pe)-1] == '}' {
 				if pos < len(args) {
-					pe = args[pos]
+					pe = anyToString(args[pos])
 				} else {
 					pe = fmt.Sprintf("missing-arg-%d", pos)
 				}
@@ -386,11 +386,24 @@ func (n *Node) BuilderFor(args ...string) *urlbuilder.URLBuilder {
 
 	// Add extra args that were not consumed by key values
 	for ; pos < len(args); pos++ {
-		ub = ub.AddPath(args[pos])
+		ub = ub.AddPath(anyToString(args[pos]))
 	}
 
 	if n.pathSpec == pathSpecDir {
 		ub = ub.AddPath("")
 	}
 	return ub
+}
+
+func anyToString(val any) string {
+	if s, isString := val.(string); isString {
+		return s
+	}
+	if s, isStringer := val.(fmt.Stringer); isStringer {
+		return s.String()
+	}
+	if gs, isGoStringer := val.(fmt.GoStringer); isGoStringer {
+		return gs.GoString()
+	}
+	return fmt.Sprint(val)
 }
