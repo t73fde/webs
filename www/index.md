@@ -9,6 +9,7 @@ This is a collection of utility functions to build web applications in
 * [ip](/dir?ci=tip&name=ip): working with (remote) addresses in a web context.
 * [login](/dir?ci=tip&name=login): simple password based cookie authentication.
 * [middleware](/dir?ci=tip&name=middleware): functions that transform web handlers.
+* [qrcode](/dir?ci=tip&name=qrcode): generate QR codes.
 * [site](/dir?ci=tip&name=site): define web site structure; provides methods on that structure.
 * [urlbuilder](/dir?ci=tip&name=urlbuilder) creates URLs to be used in HTML.
 * [xml](/dir?ci=tip&name=feed): assist XML data generation.

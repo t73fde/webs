@@ -1,0 +1,246 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2025-present Detlef Stern
+//
+// This file is part of webs.
+//
+// webs is licensed under the latest version of the EUPL (European Union Public
+// License. Please see file LICENSE.txt for your rights and obligations under
+// this license.
+//
+// This file was originally created by Tom Harwood under an MIT license, but
+// later changed to fulfil the needs of webs. The text of the original license
+// can be found in file ORIG_LICENSE. The following statements affects the
+// original code as found on https://github.com/skip2/go-qrcode (Commit:
+// da1b6568686e89143e94f980a98bc2dbd5537f13, 2020-06-17):
+//
+// go-qrcode
+// Copyright 2014 Tom Harwood
+//
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2025-present Detlef Stern
+//-----------------------------------------------------------------------------
+
+// Package bitset implements an append only bit array.
+package bitset
+
+import (
+	"bytes"
+	"fmt"
+)
+
+// Bitset stores an array of bits.
+type Bitset struct {
+	numBits int    // number of bits stored.
+	bits    []byte // Storage for individual bits.
+}
+
+// New returns an initialised Bitset with optional initial bits v.
+func New(v ...bool) *Bitset {
+	b := &Bitset{numBits: 0, bits: make([]byte, 0)}
+	b.AppendBools(v...)
+	return b
+}
+
+// Clone returns a copy.
+func Clone(from *Bitset) *Bitset {
+	return &Bitset{numBits: from.numBits, bits: from.bits[:]}
+}
+
+// Substr returns a substring, consisting of the bits from indexes start to end.
+func (b *Bitset) Substr(start int, end int) *Bitset {
+	if start > end || end > b.numBits {
+		panic(fmt.Sprintf("Out of range start=%d end=%d numBits=%d", start, end, b.numBits))
+	}
+
+	result := New()
+	result.ensureCapacity(end - start)
+
+	for i := start; i < end; i++ {
+		if b.At(i) {
+			result.bits[result.numBits/8] |= 0x80 >> uint(result.numBits%8)
+		}
+		result.numBits++
+	}
+	return result
+}
+
+// NewFromBase2String constructs and returns a Bitset from a string. The string
+// consists of '1', '0' or ' ' characters, e.g. "1010 0101". The '1' and '0'
+// characters represent true/false bits respectively, and ' ' characters are
+// ignored.
+//
+// The function panics if the input string contains other characters.
+func NewFromBase2String(b2string string) *Bitset {
+	b := &Bitset{numBits: 0, bits: make([]byte, 0)}
+	for _, c := range b2string {
+		switch c {
+		case '1':
+			b.AppendBools(true)
+		case '0':
+			b.AppendBools(false)
+		case ' ':
+		default:
+			panic(fmt.Sprintf("Invalid char %c in NewFromBase2String", c))
+		}
+	}
+	return b
+}
+
+// AppendBytes appends a list of whole bytes.
+func (b *Bitset) AppendBytes(data []byte) {
+	for _, d := range data {
+		b.AppendByte(d, 8)
+	}
+}
+
+// AppendByte appends the numBits least significant bits from value.
+func (b *Bitset) AppendByte(value byte, numBits int) {
+	if numBits < 0 || numBits > 8 {
+		panic(fmt.Sprintf("numBits %d out of range 0-8", numBits))
+	}
+	b.ensureCapacity(numBits)
+
+	for i := numBits - 1; i >= 0; i-- {
+		if value&(1<<uint(i)) != 0 {
+			b.bits[b.numBits/8] |= 0x80 >> uint(b.numBits%8)
+		}
+		b.numBits++
+	}
+}
+
+// AppendUint32 appends the numBits least significant bits from value.
+func (b *Bitset) AppendUint32(value uint32, numBits int) {
+	if numBits < 0 || numBits > 32 {
+		panic(fmt.Sprintf("numBits %d out of range 0-32", numBits))
+	}
+	b.ensureCapacity(numBits)
+
+	for i := numBits - 1; i >= 0; i-- {
+		if value&(1<<uint(i)) != 0 {
+			b.bits[b.numBits/8] |= 0x80 >> uint(b.numBits%8)
+		}
+		b.numBits++
+	}
+}
+
+// ensureCapacity ensures the Bitset can store an additional |numBits|.
+//
+// The underlying array is expanded if necessary. To prevent frequent
+// reallocation, expanding the underlying array at least doubles its capacity.
+func (b *Bitset) ensureCapacity(numBits int) {
+	numBits += b.numBits
+
+	newNumBytes := numBits / 8
+	if numBits%8 != 0 {
+		newNumBytes++
+	}
+
+	if len(b.bits) >= newNumBytes {
+		return
+	}
+
+	b.bits = append(b.bits, make([]byte, newNumBytes+2*len(b.bits))...)
+}
+
+// Append bits copied from |other|.
+//
+// The new length is b.Len() + other.Len().
+func (b *Bitset) Append(other *Bitset) {
+	b.ensureCapacity(other.numBits)
+
+	for i := 0; i < other.numBits; i++ {
+		if other.At(i) {
+			b.bits[b.numBits/8] |= 0x80 >> uint(b.numBits%8)
+		}
+		b.numBits++
+	}
+}
+
+// AppendBools appends bits to the Bitset.
+func (b *Bitset) AppendBools(bits ...bool) {
+	b.ensureCapacity(len(bits))
+
+	for _, v := range bits {
+		if v {
+			b.bits[b.numBits/8] |= 0x80 >> uint(b.numBits%8)
+		}
+		b.numBits++
+	}
+}
+
+// AppendNumBools appends num bits of value value.
+func (b *Bitset) AppendNumBools(num int, value bool) {
+	for range num {
+		b.AppendBools(value)
+	}
+}
+
+// String returns a human readable representation of the Bitset's contents.
+func (b *Bitset) String() string {
+	var bitString string
+	for i := 0; i < b.numBits; i++ {
+		if (i % 8) == 0 {
+			bitString += " "
+		}
+
+		if (b.bits[i/8] & (0x80 >> byte(i%8))) != 0 {
+			bitString += "1"
+		} else {
+			bitString += "0"
+		}
+	}
+	return fmt.Sprintf("numBits=%d, bits=%s", b.numBits, bitString)
+}
+
+// Len returns the length of the Bitset in bits.
+func (b *Bitset) Len() int { return b.numBits }
+
+// Bits returns the contents of the Bitset.
+func (b *Bitset) Bits() []bool { // TODO: possible removable
+	result := make([]bool, b.numBits)
+	for i := 0; i < b.numBits; i++ {
+		result[i] = (b.bits[i/8] & (0x80 >> byte(i%8))) != 0
+	}
+	return result
+}
+
+// At returns the value of the bit at |index|.
+func (b *Bitset) At(index int) bool {
+	if index < 0 || index >= b.numBits {
+		panic(fmt.Sprintf("Index %d out of range", index))
+	}
+	return (b.bits[index/8] & (0x80 >> byte(index%8))) != 0
+}
+
+// Equals returns true if the Bitset equals other.
+func (b *Bitset) Equals(other *Bitset) bool {
+	if b.numBits != other.numBits {
+		return false
+	}
+	if !bytes.Equal(b.bits[0:b.numBits/8], other.bits[0:b.numBits/8]) {
+		return false
+	}
+	for i := 8 * (b.numBits / 8); i < b.numBits; i++ {
+		a := (b.bits[i/8] & (0x80 >> byte(i%8)))
+		b := (other.bits[i/8] & (0x80 >> byte(i%8)))
+		if a != b {
+			return false
+		}
+	}
+	return true
+}
+
+// ByteAt returns a byte consisting of upto 8 bits starting at index.
+func (b *Bitset) ByteAt(index int) (result byte) {
+	if index < 0 || index >= b.numBits {
+		panic(fmt.Sprintf("Index %d out of range", index))
+	}
+
+	for i := index; i < index+8 && i < b.numBits; i++ {
+		result <<= 1
+		if b.At(i) {
+			result |= 1
+		}
+	}
+	return result
+}
