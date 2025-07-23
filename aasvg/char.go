@@ -8,7 +8,7 @@
 // this license.
 //
 // This file was originally created by the ASCIIToSVG contributors under an MIT
-// license, but later changed to fulfil the needs of Zettelstore. The following
+// license, but later changed to fulfil the needs of webs. The following
 // statements affects the original code as found on
 // https://github.com/asciitosvg/asciitosvg (Commit:
 // ca82a5ce41e2190a05e07af6e8b3ea4e3256a283, 2020-11-20):
