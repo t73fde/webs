@@ -7,6 +7,7 @@ This is a collection of utility functions to build web applications in
 * [feed](/dir?ci=tip&name=feed): assist web feed generation.
 * [flash](/dir?ci=tip&name=flash): display application defined messages on next web page.
 * [ip](/dir?ci=tip&name=ip): working with (remote) addresses in a web context.
+* [htmls](/dir?ci=tip&name=htmls): Small DSL to build HTML5 tree.
 * [login](/dir?ci=tip&name=login): simple password based cookie authentication.
 * [middleware](/dir?ci=tip&name=middleware): functions that transform web handlers.
 * [qrcode](/dir?ci=tip&name=qrcode): generate QR codes.
