@@ -15,7 +15,8 @@
 package tags
 
 // IsVoid returns true, if the given tag is a "void tag", according to section
-// 13.1.2 of the HTML5 spec.
+// 13.1.2 of the HTML5 spec:
+// https://html.spec.whatwg.org/multipage/syntax.html#void-elements
 func IsVoid(tag string) bool {
 	_, found := voidTags[tag]
 	return found
