@@ -150,3 +150,34 @@ func TestEscapeComment(t *testing.T) {
 		})
 	}
 }
+
+func TestEscapeURL(t *testing.T) {
+	testcases := []struct {
+		name    string
+		comment string
+		exp     string
+	}{
+		{"nil", "", ""},
+		{"space", " ", "%20"},
+		{"home", "https://t73f.de/r/webs/htmls/render", "https://t73f.de/r/webs/htmls/render"},
+		{"fies", "search?q=%&r=Ä", "search?q=%25&r=%c3%84"},
+		{"a+b", "a+b", "a+b"},
+		{"already-escaped", "a%23b", "a%23"},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			var sb strings.Builder
+			err := render.EscapeURL(&sb, tc.comment)
+			var got string
+			if err != nil {
+				got = "{[{" + err.Error() + "}]}"
+			} else {
+				got = sb.String()
+			}
+			if got != tc.exp {
+				t.Errorf("\nexpected: %q\n but got: %q", tc.exp, got)
+			}
+		})
+	}
+}

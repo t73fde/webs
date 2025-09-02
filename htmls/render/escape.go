@@ -16,6 +16,7 @@ package render
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 
 	"t73f.de/r/zero/runes"
@@ -197,4 +198,54 @@ func escapeComment(w myWriter, s string) error {
 		}
 	}
 	return nil
+}
+
+// EscapeURL writes the string as an escaped URL.
+func EscapeURL(w io.Writer, s string) error {
+	if mw, ok := w.(myWriter); ok {
+		return escapeURL(mw, s)
+	}
+	buf := bufio.NewWriter(w)
+	if err := escapeURL(buf, s); err != nil {
+		return err
+	}
+	return buf.Flush()
+}
+
+func escapeURL(w myWriter, s string) error {
+	pos := 0
+	for i, n := 0, len(s); i < n; i++ {
+		ch := s[i]
+		switch ch {
+		case '!', '#', '$', '&', '*', '+', ',', '/', ':', ';', '=', '?', '@', '[', ']':
+			continue
+		case '-', '.', '_', '~':
+			continue
+		case '%':
+			if i+2 < n && isHex(s[i+1]) && isHex(s[i+2]) {
+				// If already an %-encoding, do not encode '%' twice.
+				continue
+			}
+		default:
+			if 'a' <= ch && ch <= 'z' || '0' <= ch && ch <= '9' || 'A' <= ch && ch <= 'Z' {
+				continue
+			}
+		}
+		if _, err := w.WriteString(s[pos:i]); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "%%%02x", ch); err != nil {
+			return err
+		}
+		pos = i + 1
+
+	}
+	if _, err := w.WriteString(s[pos:]); err != nil {
+		return err
+	}
+	return nil
+}
+
+func isHex(ch byte) bool {
+	return '0' <= ch && ch <= '9' || 'a' <= ch && ch <= 'f' || 'A' <= ch && ch <= 'F'
 }
