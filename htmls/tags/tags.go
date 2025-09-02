@@ -18,24 +18,13 @@ package tags
 // 13.1.2 of the HTML5 spec:
 // https://html.spec.whatwg.org/multipage/syntax.html#void-elements
 func IsVoid(tag string) bool {
-	_, found := voidTags[tag]
-	return found
-}
+	switch tag {
+	case "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+		"meta", "source", "track", "wbr":
 
-var voidTags = map[string]struct{}{
-	"area":   {},
-	"base":   {},
-	"br":     {},
-	"col":    {},
-	"embed":  {},
-	"hr":     {},
-	"img":    {},
-	"input":  {},
-	"link":   {},
-	"meta":   {},
-	"source": {},
-	"track":  {},
-	"wbr":    {},
+		return true
+	}
+	return false
 }
 
 // IsLiteralChildTextTag tests agains HTML5 spec, section 13.3, if children
