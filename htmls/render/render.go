@@ -17,12 +17,10 @@ package render
 import (
 	"bufio"
 	"fmt"
-	"html"
 	"io"
 	"strings"
 
 	"t73f.de/r/webs/htmls"
-	"t73f.de/r/webs/htmls/comments"
 	"t73f.de/r/webs/htmls/tags"
 )
 
@@ -48,15 +46,14 @@ func render(w myWriter, node *htmls.Node) error {
 	}
 	switch node.Type {
 	case htmls.TextNode:
-		_, err := w.WriteString(html.EscapeString(node.Data))
-		return err
+		return escape(w, node.Data)
 	case htmls.ElementNode:
 		// no-op, fall through
 	case htmls.CommentNode:
 		if _, err := w.WriteString("<-- "); err != nil {
 			return err
 		}
-		if err := comments.Escape(w, node.Data); err != nil {
+		if err := escapeComment(w, node.Data); err != nil {
 			return err
 		}
 		if _, err := w.WriteString(" -->"); err != nil {
@@ -81,16 +78,13 @@ func render(w myWriter, node *htmls.Node) error {
 		if err := w.WriteByte(' '); err != nil {
 			return err
 		}
-		if _, err := w.WriteString(html.EscapeString(attr.Key)); err != nil {
+		if err := escapeAttrKey(w, attr.Key); err != nil {
 			return err
 		}
-		if _, err := w.WriteString("=\""); err != nil {
+		if err := w.WriteByte('='); err != nil {
 			return err
 		}
-		if _, err := w.WriteString(html.EscapeString(attr.Value)); err != nil {
-			return err
-		}
-		if err := w.WriteByte('"'); err != nil {
+		if err := escapeAttrValue(w, attr.Value); err != nil {
 			return err
 		}
 	}
