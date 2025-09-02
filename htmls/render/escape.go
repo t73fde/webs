@@ -40,6 +40,8 @@ func escape(w myWriter, s string) error {
 		var escaped string
 
 		switch s[i] {
+		case 0:
+			escaped = "\uFFFD"
 		case '&':
 			escaped = "&amp;"
 		case '\'':
@@ -50,8 +52,7 @@ func escape(w myWriter, s string) error {
 		case '>':
 			escaped = "&gt;"
 		case '"':
-			// "&#34;" is shorter than "&quot;".
-			escaped = "&#34;"
+			escaped = "&quot;" // longer than "&#34;", but often requested in standards
 		default:
 			continue
 		}

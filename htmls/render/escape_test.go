@@ -34,7 +34,7 @@ func TestEscape(t *testing.T) {
 		{"apos", "a'b", "a&#39;b"},
 		{"lt", "a<b", "a&lt;b"},
 		{"gt", "a>b", "a&gt;b"},
-		{"quot", "a\"b", "a&#34;b"},
+		{"quot", "a\"b", "a&quot;b"},
 		{"abc", "abc", "abc"},
 	}
 
