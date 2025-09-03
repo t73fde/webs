@@ -54,12 +54,6 @@ func (fd *InputElement) Value() string { return fd.value }
 // Clear the input element.
 func (fd *InputElement) Clear() { fd.value = "" }
 
-// Time layouts of data coming from HTML forms.
-const (
-	htmlDateLayout     = "2006-01-02"
-	htmlDatetimeLayout = "2006-01-02T15:04"
-)
-
 // SetValue sets the value of this input element.
 func (fd *InputElement) SetValue(value string) (err error) {
 	fd.value = value
@@ -135,14 +129,6 @@ func DateField(name, label string, validators ...Validator) *InputElement {
 	}
 }
 
-// DateValue returns the date as a string suitable for a HTML date field value.
-func DateValue(t time.Time) string {
-	if t.Equal(time.Time{}) {
-		return ""
-	}
-	return t.Format(htmlDateLayout)
-}
-
 // DatetimeField builds a new field to enter a local date/time.
 func DatetimeField(name, label string, validators ...Validator) *InputElement {
 	return &InputElement{
@@ -151,14 +137,6 @@ func DatetimeField(name, label string, validators ...Validator) *InputElement {
 		label:      label,
 		validators: validators,
 	}
-}
-
-// DatetimeValue returns the time as a string suitable for a HTML datetime-local field value.
-func DatetimeValue(t time.Time) string {
-	if t.Equal(time.Time{}) {
-		return ""
-	}
-	return t.Format(htmlDatetimeLayout)
 }
 
 // PasswordField builds a new password field.
