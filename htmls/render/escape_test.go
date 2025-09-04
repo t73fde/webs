@@ -162,7 +162,7 @@ func TestEscapeURL(t *testing.T) {
 		{"home", "https://t73f.de/r/webs/htmls/render", "https://t73f.de/r/webs/htmls/render"},
 		{"fies", "search?q=%&r=Ä", "search?q=%25&r=%c3%84"},
 		{"a+b", "a+b", "a+b"},
-		{"already-escaped", "a%23b", "a%23"},
+		{"already-escaped", "a%23b", "a%23b"},
 	}
 
 	for _, tc := range testcases {
