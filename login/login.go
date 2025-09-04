@@ -28,6 +28,8 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	zerocontext "t73f.de/r/zero/context"
 )
 
 // Provider is an object that handles everything w.r.t authentication.
@@ -221,7 +223,7 @@ func (lp *Provider) LoginUser(w http.ResponseWriter, r *http.Request, userinfo U
 		return
 	}
 	lp.logger.Info("Login", "user", userinfo.Name())
-	r = r.WithContext(setSession(ctx, &SessionInfo{SessionID: sessid, User: userinfo}))
+	r = r.WithContext(withSession(ctx, &SessionInfo{SessionID: sessid, User: userinfo}))
 	lp.redir.SuccessRedirect(w, r, userinfo)
 }
 
@@ -244,20 +246,18 @@ func (lp *Provider) Logout() http.Handler {
 	})
 }
 
-func setSession(ctx context.Context, session *SessionInfo) context.Context {
-	return context.WithValue(ctx, sessionKeyType{}, session)
-}
-
 type sessionKeyType struct{}
 
 // Session returns a reference to the current user session, or nil if there is
 // no session.
 func Session(ctx context.Context) *SessionInfo {
-	if session, ok := ctx.Value(sessionKeyType{}).(*SessionInfo); ok {
+	if session, ok := getSession(ctx); ok {
 		return session
 	}
 	return nil
 }
+
+var withSession, getSession = zerocontext.WithAndValue[*SessionInfo](sessionKeyType{})
 
 // EnrichUserInfo is a middleware that retrieves the user info based on the
 // cookie and stores it in the request context.
@@ -266,7 +266,7 @@ func Session(ctx context.Context) *SessionInfo {
 func (lp *Provider) EnrichUserInfo(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if userinfo, sessid, err := lp.checkCookie(r); err == nil {
-			ctx := setSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
+			ctx := withSession(r.Context(), &SessionInfo{SessionID: sessid, User: userinfo})
 			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w, r)

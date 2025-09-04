@@ -15,10 +15,11 @@ package check_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	zerocontext "t73f.de/r/zero/context"
 
 	"t73f.de/r/webs/middleware/check"
 )
@@ -31,9 +32,7 @@ const ctxVal = "123"
 func TestChecker(t *testing.T) {
 	used := ""
 	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if val := r.Context().Value(ctxKey); val != nil {
-			used = fmt.Sprintf("%v", val)
-		}
+		used, _ = getCtx(r.Context())
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux := http.NewServeMux()
@@ -97,5 +96,7 @@ func checkTrue(_ http.ResponseWriter, r *http.Request) (context.Context, bool) {
 	return r.Context(), true
 }
 func checkTrueCtx(_ http.ResponseWriter, r *http.Request) (context.Context, bool) {
-	return context.WithValue(r.Context(), ctxKey, ctxVal), true
+	return withCtx(r.Context(), ctxVal), true
 }
+
+var withCtx, getCtx = zerocontext.WithAndValue[string](ctxKey)

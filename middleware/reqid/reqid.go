@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"t73f.de/r/webs/middleware"
+	zerocontext "t73f.de/r/zero/context"
 	"t73f.de/r/zero/snow"
 )
 
@@ -54,7 +55,7 @@ func (c *Config) Build() middleware.Functor {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := gen.Create(appID)
 			if withContext {
-				r = r.WithContext(context.WithValue(r.Context(), ctxKeyType{}, id))
+				r = r.WithContext(withReqID(r.Context(), id))
 			}
 			s := id.String()
 			r.Header.Set(headerKey, s)
@@ -68,9 +69,11 @@ func (c *Config) Build() middleware.Functor {
 
 type ctxKeyType struct{}
 
+var withReqID, getReqID = zerocontext.WithAndValue[snow.Key](ctxKeyType{})
+
 // GetRequestID returns the request identification injected by the middleware functor.
 func GetRequestID(ctx context.Context) snow.Key {
-	if id, ok := ctx.Value(ctxKeyType{}).(snow.Key); ok {
+	if id, ok := getReqID(ctx); ok {
 		return id
 	}
 	return snow.Invalid
