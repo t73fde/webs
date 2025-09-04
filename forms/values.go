@@ -44,9 +44,9 @@ func DatetimeValue(t time.Time) string {
 // UintValue returns the value as a string to be stored in a field.
 func UintValue(i uint64) string { return strconv.FormatUint(i, 10) }
 
-// CheckedValue returns a value for a checkbox.
+// CheckboxValue returns a value for a checkbox.
 // The value should be the name for the [CheckboxField].
-func CheckedValue(b bool, val string) string {
+func CheckboxValue(b bool, val string) string {
 	if b {
 		return val
 	}
