@@ -6,8 +6,9 @@ This is a collection of utility functions to build web applications in
 * [aasvg](/dir?ci=tip&name=aasvg): simple ASCII art to SVG translator
 * [feed](/dir?ci=tip&name=feed): assist web feed generation.
 * [flash](/dir?ci=tip&name=flash): display application defined messages on next web page.
-* [ip](/dir?ci=tip&name=ip): working with (remote) addresses in a web context.
+* [forms](/dir?ci=tip&name=forms): HTML form rendering and validation, similar to [WTForms](https://wtforms.readthedocs.io/).
 * [htmls](/dir?ci=tip&name=htmls): Small DSL to build HTML5 tree.
+* [ip](/dir?ci=tip&name=ip): working with (remote) addresses in a web context.
 * [login](/dir?ci=tip&name=login): simple password based cookie authentication.
 * [middleware](/dir?ci=tip&name=middleware): functions that transform web handlers.
 * [qrcode](/dir?ci=tip&name=qrcode): generate QR codes.
