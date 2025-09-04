@@ -68,3 +68,10 @@ func renderForm(f *forms.Form) string {
 	}
 	return sb.String()
 }
+
+func TestRenderNilForm(t *testing.T) {
+	var f *forms.Form
+	if got := f.Render(); got != nil {
+		t.Errorf("nil snippet expected, but got: %v", got)
+	}
+}

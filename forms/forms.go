@@ -278,6 +278,9 @@ func (f *Form) Messages() Messages { return f.messages }
 
 // Render the form.
 func (f *Form) Render() *htmls.Node {
+	if f == nil {
+		return nil
+	}
 	formNode := htmls.Elem("form", htmls.Attrs("action", f.action, "method", f.method))
 	formNode.Children = make([]*htmls.Node, 0, len(f.fields))
 
