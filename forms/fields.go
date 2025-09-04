@@ -147,18 +147,10 @@ func (cbe *CheckboxElement) SetValue(value string) error { cbe.value = value; re
 // SetChecked sets the value of the checkbox element.
 func (cbe *CheckboxElement) SetChecked(val bool) {
 	if val {
-		cbe.value = "on"
+		cbe.value = cbe.name
 	} else {
 		cbe.value = ""
 	}
-}
-
-// CheckedValue returns the date as a string suitable for a HTML checked field value.
-func CheckedValue(b bool) string {
-	if b {
-		return "on"
-	}
-	return ""
 }
 
 // Validators return the currently active validators.
