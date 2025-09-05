@@ -441,7 +441,9 @@ func makeValidatorAttributes(validators []Validator) []htmls.Attribute {
 	}
 	result := make([]htmls.Attribute, 0, len(validators))
 	for _, val := range validators {
-		result = append(result, val.Attributes()...)
+		if valAttr, ok := val.(FieldAttributor); ok {
+			result = append(result, valAttr.Attributes()...)
+		}
 	}
 	return result
 }

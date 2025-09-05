@@ -24,10 +24,14 @@ import (
 )
 
 // Validator is used to check if a field value is valid.
-// In addition, it supports field rendering by adding HTML form field attributes.
 type Validator interface {
 	Check(*Form, Field) error
+}
 
+// FieldAttributor supports validation, by adding appropriate HTML form field
+// attributes. For example, a required field should add the "required"
+// HTML attribute, so that the browser will be able to check the input.
+type FieldAttributor interface {
 	// Attributes contain additional HTML attributes for a field.
 	Attributes() []htmls.Attribute
 }
@@ -89,9 +93,6 @@ func (Optional) Check(_ *Form, field Field) error {
 	}
 	return StopValidationError("")
 }
-
-// Attributes returns HTML attributes.
-func (Optional) Attributes() []htmls.Attribute { return nil }
 
 // ----- MinMaxLength: field must have a value of a specific length.
 
@@ -208,9 +209,6 @@ func (u UInt) Check(_ *Form, field Field) error {
 	return nil
 }
 
-// Attributes returns HTML attributes.
-func (UInt) Attributes() []htmls.Attribute { return nil }
-
 // ----- AnyOf: field must have a value that is explitly stated as valid.
 // ----- NoneOf: field must have not a value that is explitly stated as invalid.
 
@@ -237,7 +235,6 @@ func (so setOf) Check(_ *Form, field Field) error {
 	slices.Sort(validElements)
 	return ValidationError(fmt.Sprintf("%s does not contain any valid input: %v (expected one of %v)", field.Name(), val, validElements))
 }
-func (so setOf) Attributes() []htmls.Attribute { return nil }
 
 // ----- StringXXX: field must have a value that compares to a specific constant.
 
@@ -277,8 +274,6 @@ type stringCompare struct {
 func (fsc *stringCompare) Check(_ *Form, field Field) error {
 	return compareStringValues(fsc.op, field.Value(), fsc.value, fsc.message)
 }
-
-func (*stringCompare) Attributes() []htmls.Attribute { return nil }
 
 func compareStringValues(op int, value, other string, msg string) error {
 	var msgOp string
@@ -360,5 +355,3 @@ func (fsc *fieldStringCompare) Check(f *Form, field Field) error {
 	}
 	return compareStringValues(fsc.op, field.Value(), other.Value(), fsc.message)
 }
-
-func (*fieldStringCompare) Attributes() []htmls.Attribute { return nil }

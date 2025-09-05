@@ -24,13 +24,6 @@ func TestValidatorAnyNoneOf(t *testing.T) {
 	anyOf := forms.AnyOf(valid...)
 	noneOf := forms.NoneOf(valid...)
 
-	if got := anyOf.Attributes(); got != nil {
-		t.Error("non nil attributes for anyOf", got)
-	}
-	if got := noneOf.Attributes(); got != nil {
-		t.Error("non nil attributes for noneOf", got)
-	}
-
 	fieldAny := forms.TextField("any", "any", anyOf)
 	fieldNone := forms.TextField("none", "none", noneOf)
 	form := forms.Define(fieldAny, fieldNone)
