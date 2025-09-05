@@ -33,6 +33,7 @@ func TestReqIDLogging(t *testing.T) {
 
 	reqConfig := reqid.Config{WithContext: true}
 	reqLogger := reqConfig.WithLogger(baseLogger)
+	reqLogger = reqLogger.With("key", "val")
 
 	handler := func(_ http.ResponseWriter, r *http.Request) {
 		reqLogger.Info("NOCO")
@@ -57,7 +58,7 @@ func TestReqIDLogging(t *testing.T) {
 	if exp := " level=INFO msg=NOCO"; !strings.Contains(nocoLine, exp) {
 		t.Errorf("expected %q in first log, but got: %q", exp, nocoLine)
 	}
-	if exp := " level=INFO msg=CTX! REQ-ID="; !strings.Contains(ctxLine, exp) {
+	if exp := " level=INFO msg=CTX! key=val REQ-ID="; !strings.Contains(ctxLine, exp) {
 		t.Errorf("expected %q in second log, but got: %q", exp, ctxLine)
 	}
 }

@@ -52,9 +52,9 @@ func (rid *reqidLogHandler) Enabled(ctx context.Context, level slog.Level) bool 
 }
 
 func (rid *reqidLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &reqidLogHandler{h: rid.h.WithAttrs(attrs)}
+	return &reqidLogHandler{h: rid.h.WithAttrs(attrs), key: rid.key}
 }
 
 func (rid *reqidLogHandler) WithGroup(name string) slog.Handler {
-	return &reqidLogHandler{h: rid.h.WithGroup(name)}
+	return &reqidLogHandler{h: rid.h.WithGroup(name), key: rid.key}
 }
