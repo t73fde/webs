@@ -28,6 +28,12 @@ type Validator interface {
 	Check(*Form, Field) error
 }
 
+// ValidatorFunc is a function that acts as a [Validator].
+type ValidatorFunc func(*Form, Field) error
+
+// Check the validator by executing the function itself.
+func (f ValidatorFunc) Check(form *Form, fld Field) error { return f(form, fld) }
+
 // FieldAttributor supports validation, by adding appropriate HTML form field
 // attributes. For example, a required field should add the "required"
 // HTML attribute, so that the browser will be able to check the input.
@@ -198,10 +204,7 @@ func (mv *MaxValue) Attributes() []htmls.Attribute {
 // ----- UInt: field must have an unsigned integer value.
 
 // UInt is a validator that checks for an unsigned integer value.
-type UInt struct{}
-
-// Check the given field w.r.t. to this validator.
-func (u UInt) Check(_ *Form, field Field) error {
+func UInt(_ *Form, field Field) error {
 	val := field.Value()
 	if _, err := strconv.ParseUint(val, 10, 64); err != nil {
 		return ValidationError(fmt.Sprintf("%s does not contain an unsigned integer value: %v", field.Name(), val))
