@@ -38,15 +38,17 @@ func TestStatusBuilder(t *testing.T) {
 	})
 	cfg := status.Config{}
 	mux := http.NewServeMux()
-	mux.Handle("GET /200", cfg.Build()(hf200))
 
+	mux.Handle("GET /200/base", cfg.Build()(hf200))
 	check200(t, mux, "base", &data200)
 
 	cfg.HandlerMap = status.HandlerMap{
 		http.StatusNotFound: http.RedirectHandler(
 			"/foo", http.StatusTemporaryRedirect)}
-	mux.Handle("GET /404", cfg.Build()(hf404))
+	mux.Handle("GET /200/set", cfg.Build()(hf200))
+	check200(t, mux, "set", &data200)
 
+	mux.Handle("GET /404", cfg.Build()(hf404))
 	r, err := http.NewRequest("GET", "/404", nil)
 	if err != nil {
 		t.Errorf("NewRequest: %s", err)
@@ -70,6 +72,9 @@ func TestStatusBuilder(t *testing.T) {
 	}
 
 	cfg.NoClearMap = map[int]bool{404: true}
+	mux.Handle("GET /200/nc", cfg.Build()(hf200))
+	check200(t, mux, "nc", &data200)
+
 	mux.Handle("GET /404c", cfg.Build()(hf404))
 	r, err = http.NewRequest("GET", "/404c", nil)
 	if err != nil {
@@ -97,7 +102,7 @@ func TestStatusBuilder(t *testing.T) {
 func check200(t *testing.T, mux *http.ServeMux, name string, data200 *string) {
 	t.Helper()
 	t.Run(name, func(t *testing.T) {
-		r, err := http.NewRequest("GET", "/200", nil)
+		r, err := http.NewRequest("GET", "/200/"+name, nil)
 		if err != nil {
 			t.Errorf("NewRequest: %s", err)
 			return
