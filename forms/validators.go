@@ -201,9 +201,23 @@ func (mv *MaxValue) Attributes() []htmls.Attribute {
 	return []htmls.Attribute{{Key: "max", Value: mv.Value}}
 }
 
+// ----- Int: field must have an integer value.
+
+// Int is a validator function that checks for an integer value.
+func Int(_ *Form, field Field) error {
+	val := field.Value()
+	if _, err := strconv.Atoi(val); err != nil {
+		return ValidationError(fmt.Sprintf("%s does not contain an integer value: %v", field.Name(), val))
+	}
+	return nil
+}
+
+// IntValidator returns Int as n validator.
+func IntValidator() Validator { return ValidatorFunc(Int) }
+
 // ----- UInt: field must have an unsigned integer value.
 
-// UInt is a validator that checks for an unsigned integer value.
+// UInt is a validator function that checks for an unsigned integer value.
 func UInt(_ *Form, field Field) error {
 	val := field.Value()
 	if _, err := strconv.ParseUint(val, 10, 64); err != nil {
@@ -211,6 +225,9 @@ func UInt(_ *Form, field Field) error {
 	}
 	return nil
 }
+
+// UIntValidator returns UInt as n validator.
+func UIntValidator() Validator { return ValidatorFunc(UInt) }
 
 // ----- AnyOf: field must have a value that is explitly stated as valid.
 // ----- NoneOf: field must have not a value that is explitly stated as invalid.

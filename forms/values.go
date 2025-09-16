@@ -41,6 +41,9 @@ func DatetimeValue(t time.Time) string {
 	return t.Format(htmlDatetimeLayout)
 }
 
+// IntValue returns the value as a string to be stored in a field.
+func IntValue(i int) string { return strconv.Itoa(i) }
+
 // UintValue returns the value as a string to be stored in a field.
 func UintValue(i uint64) string { return strconv.FormatUint(i, 10) }
 
@@ -90,6 +93,18 @@ func (d Data) GetDatetime(fieldName string) time.Time {
 		}
 	}
 	return time.Time{}
+}
+
+// GetInt returns the value of the given field as an int.
+func (d Data) GetInt(fieldName string, defaultValue int) int {
+	if len(d) > 0 {
+		if value, found := d[fieldName]; found {
+			if result, err := strconv.Atoi(value); err == nil {
+				return result
+			}
+		}
+	}
+	return defaultValue
 }
 
 // GetUint returns the value of the given field as a number.
