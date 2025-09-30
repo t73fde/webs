@@ -21,9 +21,10 @@ import (
 	"testing"
 
 	"t73f.de/r/webs/middleware/header"
+	"t73f.de/r/zero/snow"
 )
 
-func TestHeader(t *testing.T) {
+func TestHeaderConstants(t *testing.T) {
 	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	mux := http.NewServeMux()
 
@@ -40,6 +41,45 @@ func TestHeader(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
 			cfg := header.Config{Constants: tc.inp}
+			mux.Handle("GET "+tc.path, cfg.Build()(hf))
+
+			r, err := http.NewRequest("GET", tc.path, nil)
+			if err != nil {
+				t.Errorf("NewRequest: %s", err)
+			}
+			rr := httptest.NewRecorder()
+			mux.ServeHTTP(rr, r)
+
+			if got := rr.Header(); !maps.EqualFunc(tc.exp, got, slices.Equal) {
+				t.Errorf("expected: %v, but got %v", tc.exp, got)
+			}
+		})
+	}
+}
+
+func TestHeaderFunctions(t *testing.T) {
+	hf := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	mux := http.NewServeMux()
+
+	// Create a random string
+	keygen := snow.New(0)
+	skey := keygen.Create(0).String()
+
+	mfunc := func(string, *http.Request) string { return skey }
+
+	var cnst map[string]header.Function
+	tests := []struct {
+		path string
+		inp  map[string]header.Function
+		exp  http.Header
+	}{
+		{"/foo", cnst, http.Header{}},
+		{"/bar", map[string]header.Function{}, http.Header{}},
+		{"/baz", map[string]header.Function{"key": mfunc}, http.Header{"Key": {skey}}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			cfg := header.Config{Functions: tc.inp}
 			mux.Handle("GET "+tc.path, cfg.Build()(hf))
 
 			r, err := http.NewRequest("GET", tc.path, nil)
