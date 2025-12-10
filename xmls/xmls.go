@@ -11,5 +11,5 @@
 // SPDX-FileCopyrightText: 2025-present Detlef Stern
 //-----------------------------------------------------------------------------
 
-// Package xml helps to create XML data.
-package xml
+// Package xmls helps to create XML data.
+package xmls

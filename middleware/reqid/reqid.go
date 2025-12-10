@@ -19,9 +19,10 @@ import (
 	"context"
 	"net/http"
 
-	"t73f.de/r/webs/middleware"
-	zerocontext "t73f.de/r/zero/context"
+	"t73f.de/r/zero/contexts"
 	"t73f.de/r/zero/snow"
+
+	"t73f.de/r/webs/middleware"
 )
 
 // DefaultHeaderKey specifies the HTTP header key, where the request ID should be stored.
@@ -73,7 +74,7 @@ func (c *Config) Build() middleware.Functor {
 
 type ctxKeyType struct{}
 
-var withReqID, getReqID = zerocontext.WithAndValue[snow.Key](ctxKeyType{})
+var withReqID, getReqID = contexts.WithAndValue[snow.Key](ctxKeyType{})
 
 // GetRequestID returns the request identification injected by the middleware functor.
 func GetRequestID(ctx context.Context) snow.Key {

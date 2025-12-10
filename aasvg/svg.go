@@ -28,7 +28,7 @@ import (
 	"io"
 	"strings"
 
-	"t73f.de/r/webs/xml"
+	"t73f.de/r/webs/xmls"
 )
 
 // CanvasToSVG renders the supplied asciitosvg.Canvas to SVG, based on the supplied options.
@@ -167,7 +167,7 @@ func writeTexts(w io.Writer, c *Canvas, font string, scaleX, scaleY int) {
 
 func escape(s string) string {
 	var sb strings.Builder
-	xml.EscapeString(&sb, s)
+	xmls.EscapeString(&sb, s)
 	return sb.String()
 }
 

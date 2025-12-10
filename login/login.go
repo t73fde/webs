@@ -29,7 +29,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	zerocontext "t73f.de/r/zero/context"
+	"t73f.de/r/zero/contexts"
 )
 
 // Provider is an object that handles everything w.r.t authentication.
@@ -257,7 +257,7 @@ func Session(ctx context.Context) *SessionInfo {
 	return nil
 }
 
-var withSession, getSession = zerocontext.WithAndValue[*SessionInfo](sessionKeyType{})
+var withSession, getSession = contexts.WithAndValue[*SessionInfo](sessionKeyType{})
 
 // EnrichUserInfo is a middleware that retrieves the user info based on the
 // cookie and stores it in the request context.

@@ -19,7 +19,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	zerocontext "t73f.de/r/zero/context"
+	"t73f.de/r/zero/contexts"
 
 	"t73f.de/r/webs/middleware/check"
 )
@@ -99,4 +99,4 @@ func checkTrueCtx(_ http.ResponseWriter, r *http.Request) (context.Context, bool
 	return withCtx(r.Context(), ctxVal), true
 }
 
-var withCtx, getCtx = zerocontext.WithAndValue[string](ctxKey)
+var withCtx, getCtx = contexts.WithAndValue[string](ctxKey)
