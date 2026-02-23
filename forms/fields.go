@@ -356,6 +356,19 @@ func (se *SelectElement) Render(fieldID string, messages []string) *htmls.Node {
 	return divElem
 }
 
+// EnsureEmptyChoice preprends an empty choice, if it is not already part of the given choices.
+func EnsureEmptyChoice(choices []string) []string {
+	for i := 0; i < len(choices); i += 2 {
+		if choices[i] == "" {
+			return choices
+		}
+	}
+	result := make([]string, 0, len(choices)+2)
+	result = append(result, "", "\u2E3A") // "⸺"
+	result = append(result, choices...)
+	return result
+}
+
 // ----- Flow Content -----
 
 // FlowContentElement adds some flow content to the form.
