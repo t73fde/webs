@@ -24,7 +24,7 @@ package qrcode
 
 import (
 	"fmt"
-	"reflect"
+	"slices"
 	"testing"
 
 	"t73f.de/r/webs/qrcode/internal/bitset"
@@ -59,10 +59,16 @@ func TestClassifyDataMode(t *testing.T) {
 			t.Error(err)
 		}
 
-		if !reflect.DeepEqual(test.actual, encoder.actual) {
+		if !slices.EqualFunc(test.actual, encoder.actual, equalSegment) {
 			t.Errorf("Got %v, expected %v", encoder.actual, test.actual)
 		}
 	}
+}
+func equalSegment(s1, s2 segment) bool {
+	if s1.dataMode == s2.dataMode {
+		return slices.Equal(s1.data, s2.data)
+	}
+	return false
 }
 
 func TestByteModeLengthCalculations(t *testing.T) {

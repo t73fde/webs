@@ -23,7 +23,7 @@
 package aasvg
 
 import (
-	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -482,22 +482,22 @@ func TestNewCanvas(t *testing.T) {
 		}
 		objs := c.objects()
 		if line.strings != nil {
-			if got := getStrings(objs); !reflect.DeepEqual(line.strings, got) {
+			if got := getStrings(objs); !slices.Equal(line.strings, got) {
 				t.Errorf("%d: expected %q, but got %q", i, line.strings, got)
 			}
 		}
 		if line.texts != nil {
-			if got := getTexts(objs); !reflect.DeepEqual(line.texts, got) {
+			if got := getTexts(objs); !slices.Equal(line.texts, got) {
 				t.Errorf("%d: expected %q, but got %q", i, line.texts, got)
 			}
 		}
 		if line.points != nil {
 			if line.allPoints == false {
-				if got := getCorners(objs); !reflect.DeepEqual(line.points, got) {
+				if got := getCorners(objs); !slices.EqualFunc(line.points, got, equalPoints) {
 					t.Errorf("%d: expected %q, but got %q", i, line.points, got)
 				}
 			} else {
-				if got := getPoints(objs); !reflect.DeepEqual(line.points, got) {
+				if got := getPoints(objs); !slices.EqualFunc(line.points, got, equalPoints) {
 					t.Errorf("%d: expected %q, but got %q", i, line.points, got)
 				}
 			}
@@ -569,17 +569,17 @@ func TestNewCanvasBroken(t *testing.T) {
 		}
 		objs := c.objects()
 		if line.strings != nil {
-			if got := getStrings(objs); !reflect.DeepEqual(line.strings, got) {
+			if got := getStrings(objs); !slices.Equal(line.strings, got) {
 				t.Errorf("%d: expected %q, but got %q", i, line.strings, got)
 			}
 		}
 		if line.texts != nil {
-			if got := getTexts(objs); !reflect.DeepEqual(line.texts, got) {
+			if got := getTexts(objs); !slices.Equal(line.texts, got) {
 				t.Errorf("%d: expected %q, but got %q", i, line.texts, got)
 			}
 		}
 		if line.corners != nil {
-			if got := getCorners(objs); !reflect.DeepEqual(line.corners, got) {
+			if got := getCorners(objs); !slices.EqualFunc(line.corners, got, equalPoints) {
 				t.Errorf("%d: expected %q, but got %q", i, line.corners, got)
 			}
 		}
@@ -625,7 +625,7 @@ func TestPointsToCorners(t *testing.T) {
 	}
 	for i, line := range data {
 		p, c := pointsToCorners(line.in)
-		if !reflect.DeepEqual(line.expected, p) {
+		if !slices.Equal(line.expected, p) {
 			t.Errorf("%d: expected %v, but got %v", i, line.expected, p)
 		}
 		if line.closed != c {
@@ -717,3 +717,5 @@ func getCorners(objs []*object) [][]point {
 	}
 	return out
 }
+
+func equalPoints(p1, p2 []point) bool { return slices.Equal(p1, p2) }
