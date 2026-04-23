@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"t73f.de/r/webs/urlbuilder"
+	zerostrings "t73f.de/r/zero/strings"
 )
 
 // Site contains information about the web site.
@@ -130,6 +131,8 @@ type Node struct {
 
 	site     *Site
 	parent   *Node
+	nodes    []*Node // Slice of all nodes from root to this one, including both
+	param    string  // If NodePath is like "{p}" then param == "p", otherwise ""
 	pathSpec pathSpec
 
 	// hmap and mwmap are needed, because when n.SetHandler/SetHandlerMW is called,
@@ -316,6 +319,19 @@ func (n *Node) bake(st *Site, p *Node) error {
 
 	n.site = st
 	n.parent = p
+	if p == nil {
+		n.nodes = []*Node{n}
+	} else {
+		// We need to make a copy, otherwise the slice will be overwritten by cousins
+		nodes := make([]*Node, 0, len(p.nodes))
+		for _, pn := range p.nodes {
+			nodes = append(nodes, pn)
+		}
+		n.nodes = append(nodes, n)
+	}
+	if nodepath != "" && nodepath[0] == '{' && nodepath[len(nodepath)-1] == '}' {
+		n.param = nodepath[1 : len(nodepath)-1]
+	}
 
 	if hm := n.hmap; hm != nil {
 		for m, h := range hm {
@@ -365,45 +381,28 @@ func (n *Node) methodPos(st *Site, method string) int {
 // BuilderFor returns an URL builder for a specific node.
 func (n *Node) BuilderFor(args ...any) *urlbuilder.URLBuilder {
 	pos := 0
-	ancestors := []string{}
-	for a := n; a != nil; a = a.parent {
-		if pe := a.Nodepath; pe != "" {
-			if pe[0] == '{' && pe[len(pe)-1] == '}' {
-				if pos < len(args) {
-					pe = anyToString(args[pos])
-				} else {
-					pe = fmt.Sprintf("missing-arg-%d", pos)
-				}
-				pos++
-			}
-			ancestors = append(ancestors, pe)
-		}
-	}
 	ub := n.site.MakeURLBuilder()
-	for i := len(ancestors) - 1; i >= 0; i-- {
-		ub = ub.AddPath(ancestors[i])
+	for _, curr := range n.nodes {
+		if curr.param == "" {
+			if np := curr.Nodepath; np != "" {
+				ub.AddPath(np)
+			}
+		} else if pos < len(args) {
+			ub.AddPath(zerostrings.AnyToString(args[pos]))
+			pos++
+		} else {
+			ub.AddPath(fmt.Sprintf("missing-arg-%d", pos))
+			pos++
+		}
 	}
 
 	// Add extra args that were not consumed by key values
 	for ; pos < len(args); pos++ {
-		ub = ub.AddPath(anyToString(args[pos]))
+		ub = ub.AddPath(zerostrings.AnyToString(args[pos]))
 	}
 
 	if n.pathSpec == pathSpecDir {
 		ub = ub.AddPath("")
 	}
 	return ub
-}
-
-func anyToString(val any) string {
-	if s, isString := val.(string); isString {
-		return s
-	}
-	if s, isStringer := val.(fmt.Stringer); isStringer {
-		return s.String()
-	}
-	if gs, isGoStringer := val.(fmt.GoStringer); isGoStringer {
-		return gs.GoString()
-	}
-	return fmt.Sprint(val)
 }
