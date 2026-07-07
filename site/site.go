@@ -323,11 +323,7 @@ func (n *Node) bake(st *Site, p *Node) error {
 		n.nodes = []*Node{n}
 	} else {
 		// We need to make a copy, otherwise the slice will be overwritten by cousins
-		nodes := make([]*Node, 0, len(p.nodes))
-		for _, pn := range p.nodes {
-			nodes = append(nodes, pn)
-		}
-		n.nodes = append(nodes, n)
+		n.nodes = append(slices.Clone(p.nodes), n)
 	}
 	if nodepath != "" && nodepath[0] == '{' && nodepath[len(nodepath)-1] == '}' {
 		n.param = nodepath[1 : len(nodepath)-1]
