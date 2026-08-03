@@ -251,7 +251,7 @@ func (so setOf) Check(_ *Form, field Field) error {
 	if so.IsNone {
 		return ValidationError(fmt.Sprintf("%s contains an invalid value: %v", field.Name(), val))
 	}
-	validElements := slices.Collect(so.Set.Values())
+	validElements := slices.Collect(so.Set.All())
 	slices.Sort(validElements)
 	return ValidationError(fmt.Sprintf("%s does not contain any valid input: %v (expected one of %v)", field.Name(), val, validElements))
 }
