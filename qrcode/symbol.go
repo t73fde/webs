@@ -123,10 +123,7 @@ func (m *symbol) set2dPattern(x, y int, v [][]bool) {
 // bitmap returns the entire symbol, including the quiet zone.
 func (m *symbol) bitmap() [][]bool {
 	module := make([][]bool, len(m.module))
-
-	for i := range m.module {
-		module[i] = m.module[i][:]
-	}
+	copy(module, m.module)
 	return module
 }
 
