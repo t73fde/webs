@@ -208,7 +208,7 @@ func TestPNGBitmap(t *testing.T) {
 		{b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0},
 		{b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0, b0},
 	}
-	if !slices.EqualFunc(bm, expBM, func(l1, l2 []bool) bool { return slices.Equal(l1, l2) }) {
+	if !slices.EqualFunc(bm, expBM, slices.Equal) {
 		t.Error("unexpected bitmap")
 		// t.Error(bm)
 	}

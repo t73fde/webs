@@ -145,19 +145,20 @@ func pointsToCorners(points []point) ([]point, bool) {
 	out := []point{points[0]}
 
 	dir := dirNone
-	if isHorizontal(points[0], points[1]) {
+	switch {
+	case isHorizontal(points[0], points[1]):
 		dir = dirH
-	} else if isVertical(points[0], points[1]) {
+	case isVertical(points[0], points[1]):
 		dir = dirV
-	} else if isDiagonalSE(points[0], points[1]) {
+	case isDiagonalSE(points[0], points[1]):
 		dir = dirSE
-	} else if isDiagonalSW(points[0], points[1]) {
+	case isDiagonalSW(points[0], points[1]):
 		dir = dirSW
-	} else if isDiagonalNW(points[0], points[1]) {
+	case isDiagonalNW(points[0], points[1]):
 		dir = dirNW
-	} else if isDiagonalNE(points[0], points[1]) {
+	case isDiagonalNE(points[0], points[1]):
 		dir = dirNE
-	} else {
+	default:
 		panic(fmt.Errorf("discontiguous points: %+v", points))
 	}
 
@@ -171,19 +172,20 @@ func pointsToCorners(points []point) ([]point, bool) {
 	// Starting from the third point, check to see if the directionality between points P and
 	// P-1 has changed.
 	for i := 2; i < l; i++ {
-		if isHorizontal(points[i-1], points[i]) {
+		switch {
+		case isHorizontal(points[i-1], points[i]):
 			cornerFunc(i, dirH)
-		} else if isVertical(points[i-1], points[i]) {
+		case isVertical(points[i-1], points[i]):
 			cornerFunc(i, dirV)
-		} else if isDiagonalSE(points[i-1], points[i]) {
+		case isDiagonalSE(points[i-1], points[i]):
 			cornerFunc(i, dirSE)
-		} else if isDiagonalSW(points[i-1], points[i]) {
+		case isDiagonalSW(points[i-1], points[i]):
 			cornerFunc(i, dirSW)
-		} else if isDiagonalNW(points[i-1], points[i]) {
+		case isDiagonalNW(points[i-1], points[i]):
 			cornerFunc(i, dirNW)
-		} else if isDiagonalNE(points[i-1], points[i]) {
+		case isDiagonalNE(points[i-1], points[i]):
 			cornerFunc(i, dirNE)
-		} else {
+		default:
 			panic(fmt.Errorf("discontiguous points: %+v", points))
 		}
 	}
@@ -197,13 +199,14 @@ func pointsToCorners(points []point) ([]point, bool) {
 			out = append(out, last)
 		}
 	}
-	if isHorizontal(points[0], last) {
+	switch {
+	case isHorizontal(points[0], last):
 		closedFunc(dirH)
-	} else if isVertical(points[0], last) {
+	case isVertical(points[0], last):
 		closedFunc(dirV)
-	} else if isDiagonalNE(last, points[0]) {
+	case isDiagonalNE(last, points[0]):
 		closedFunc(dirNE)
-	} else {
+	default:
 		// Note: we'll always find any closed polygon from its top-left-most point. If it
 		// is closed, it must be closed in the north-easterly direction, thus we don't test
 		// for any other types of polygone closure.

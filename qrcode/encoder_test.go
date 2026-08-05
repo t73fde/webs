@@ -53,7 +53,7 @@ func TestClassifyDataMode(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		encoder := allDataEncoder[0] //(dataEncoderType1To9)
+		encoder := allDataEncoder[0] // (dataEncoderType1To9)
 		_, err := encoder.encode(test.data)
 		if err != nil {
 			t.Error(err)

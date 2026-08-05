@@ -264,11 +264,12 @@ func (n *Node) BestNode(relpath string) *Node {
 // bake the node data.
 func (n *Node) bake(st *Site, p *Node) error {
 	if id := strings.TrimSpace(n.ID); id != "" {
-		if st.nodes == nil {
+		switch {
+		case st.nodes == nil:
 			st.nodes = map[string]*Node{id: n}
-		} else if st.nodes[id] == nil {
+		case st.nodes[id] == nil:
 			st.nodes[id] = n
-		} else {
+		default:
 			return fmt.Errorf("duplicate id %q for node %v", id, n.Nodepath)
 		}
 		n.ID = id
@@ -379,14 +380,15 @@ func (n *Node) BuilderFor(args ...any) *urlbuilder.URLBuilder {
 	pos := 0
 	ub := n.site.MakeURLBuilder()
 	for _, curr := range n.nodes {
-		if curr.param == "" {
+		switch {
+		case curr.param == "":
 			if np := curr.Nodepath; np != "" {
 				ub.AddPath(np)
 			}
-		} else if pos < len(args) {
+		case pos < len(args):
 			ub.AddPath(zerostrings.AnyToString(args[pos]))
 			pos++
-		} else {
+		default:
 			ub.AddPath(fmt.Sprintf("missing-arg-%d", pos))
 			pos++
 		}

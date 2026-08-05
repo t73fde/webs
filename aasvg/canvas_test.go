@@ -691,11 +691,12 @@ func getTexts(objs []*object) []string {
 	out := []string{}
 	for _, obj := range objs {
 		t := obj.Text()
-		if !obj.isJustText() {
+		switch {
+		case !obj.isJustText():
 			out = append(out, "")
-		} else if len(t) > 0 {
+		case len(t) > 0:
 			out = append(out, string(t))
-		} else {
+		default:
 			panic("failed")
 		}
 	}

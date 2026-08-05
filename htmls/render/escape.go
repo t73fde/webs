@@ -169,11 +169,12 @@ func escapeComment(w myWriter, s string) error {
 			escaped = "&gt;"
 
 		case '<':
-			if i < lenSm3 && s[i+1] == '!' && s[i+2] == '-' && s[i+3] == '-' {
+			switch {
+			case i < lenSm3 && s[i+1] == '!' && s[i+2] == '-' && s[i+3] == '-':
 				escaped = "&lt;"
-			} else if i == lenSm3 && s[i+1] == '!' && s[i+2] == '-' {
+			case i == lenSm3 && s[i+1] == '!' && s[i+2] == '-':
 				escaped = "&lt;"
-			} else {
+			default:
 				continue
 			}
 

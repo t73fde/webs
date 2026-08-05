@@ -39,6 +39,6 @@ func TestBuildRegularSymbol(_ *testing.T) {
 
 		s := buildRegularSymbol(*v, k, data, false)
 		_ = s
-		//fmt.Print(m.string())
+		// fmt.Print(m.string())
 	}
 }

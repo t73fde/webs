@@ -290,11 +290,12 @@ func SelectField(name, label string, choices []string, validators ...Validator) 
 // SetChoices allows to update the choices after field creation, e.g. for
 // dynamically generated choices.
 func (se *SelectElement) SetChoices(choices []string) {
-	if len(choices) == 0 || len(choices) == 1 {
+	switch {
+	case len(choices) == 0, len(choices) == 1:
 		se.choices = nil
-	} else if len(choices)%2 != 0 {
+	case len(choices)%2 != 0:
 		se.choices = choices[0 : len(choices)-2]
-	} else {
+	default:
 		se.choices = choices
 	}
 }

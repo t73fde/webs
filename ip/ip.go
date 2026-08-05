@@ -42,7 +42,7 @@ func GetRemoteAddr(r *http.Request) string {
 func IsLoopbackAddr(addr string) bool {
 	var host string
 	if !strings.ContainsRune(addr, ':') {
-		addr = addr + ":80"
+		addr += ":80"
 	}
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {

@@ -141,8 +141,7 @@ type MinValue struct {
 // Check the given field w.r.t. to this validator.
 func (mv *MinValue) Check(_ *Form, field Field) error {
 	val := field.Value()
-	switch f := field.(type) {
-	case *InputElement:
+	if f, isInput := field.(*InputElement); isInput {
 		switch f.itype {
 		case itypeNumber:
 			fvalue, err := strconv.ParseFloat(val, 64)
@@ -176,8 +175,7 @@ type MaxValue struct {
 // Check the given field w.r.t. to this validator.
 func (mv *MaxValue) Check(_ *Form, field Field) error {
 	val := field.Value()
-	switch f := field.(type) {
-	case *InputElement:
+	if f, isInput := field.(*InputElement); isInput {
 		switch f.itype {
 		case itypeNumber:
 			fvalue, err := strconv.ParseFloat(val, 64)

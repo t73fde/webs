@@ -38,11 +38,12 @@ func (rs *RAMSessions) SetUserAuth(_ context.Context, userinfo UserInfo, auth Se
 
 	rs.mx.Lock()
 	numSessions := len(rs.sessions)
-	if numSessions == 0 {
+	switch {
+	case numSessions == 0:
 		rs.sessions = map[SessionID]*sessionData{auth: &session}
-	} else if numSessions > 1024 {
+	case numSessions > 1024:
 		return ErrTooManySessions
-	} else {
+	default:
 		rs.sessions[auth] = &session
 	}
 	rs.mx.Unlock()

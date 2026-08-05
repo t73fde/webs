@@ -417,9 +417,7 @@ func chooseQRCodeVersion(level RecoveryLevel, encoder *dataEncoder, numDataBits 
 	var chosenVersion *qrCodeVersion
 
 	for _, v := range versions {
-		if v.level != level {
-			continue
-		} else if v.version < encoder.minVersion {
+		if v.level != level || v.version < encoder.minVersion {
 			continue
 		} else if v.version > encoder.maxVersion {
 			break
