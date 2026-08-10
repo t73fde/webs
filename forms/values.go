@@ -38,7 +38,7 @@ func DatetimeValue(t time.Time) string {
 	if t.Equal(time.Time{}) {
 		return ""
 	}
-	return t.Format(htmlDatetimeLayout)
+	return t.Local().Format(htmlDatetimeLayout)
 }
 
 // IntValue returns the value as a string to be stored in a field.
@@ -70,8 +70,8 @@ func (d Data) Get(fieldName string) string {
 	return ""
 }
 
-// GetDate returns the value of the given field as a time.Time, but only
-// as a real date, with time 00:00:00.
+// GetDate returns the value of the given field as a UTC-based time.Time,
+// but only as a real date, with time 00:00:00.
 func (d Data) GetDate(fieldName string) time.Time {
 	if len(d) > 0 {
 		if value, found := d[fieldName]; found {
@@ -88,7 +88,7 @@ func (d Data) GetDatetime(fieldName string) time.Time {
 	if len(d) > 0 {
 		if value, found := d[fieldName]; found {
 			if result, err := time.ParseInLocation(htmlDatetimeLayout, value, time.Local); err == nil {
-				return result
+				return result.UTC()
 			}
 		}
 	}
