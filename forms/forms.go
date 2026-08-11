@@ -56,6 +56,15 @@ func (f *Form) Append(field Field) *Form {
 	return f
 }
 
+// AppendFields appends multiple fields to the form.
+func (f *Form) AppendFields(fields ...Field) *Form {
+	f.fields = append(f.fields, fields...)
+	for _, field := range fields {
+		f.addName(field)
+	}
+	return f
+}
+
 func (f *Form) addName(field Field) {
 	f.fieldnames[field.Name()] = field
 	if fs, ok := field.(*Fieldset); ok {
