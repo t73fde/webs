@@ -178,6 +178,50 @@ func (cbe *CheckboxElement) Render(fieldID string, _ []string) *htmls.Node {
 	)
 }
 
+// ----- Hidden field
+
+// HiddenElement represents some hidden data.
+type HiddenElement struct {
+	name  string
+	value string
+}
+
+// HiddenField provides a hidden input field.
+func HiddenField(name string) *HiddenElement {
+	return &HiddenElement{name: name}
+}
+
+// Name returns the name of this element.
+func (he *HiddenElement) Name() string { return he.name }
+
+// Value returns the value of this element.
+func (he *HiddenElement) Value() string { return he.value }
+
+// Clear the element.
+func (he *HiddenElement) Clear() {}
+
+// SetValue sets the value of this element.
+func (he *HiddenElement) SetValue(value string) error { he.value = value; return nil }
+
+// Validators return the currently active validators.
+func (he *HiddenElement) Validators() Validators { return nil }
+
+// Disable the hidden element.
+func (he *HiddenElement) Disable() {}
+
+// Render the hidden element.
+func (he *HiddenElement) Render(fieldID string, _ []string) *htmls.Node {
+	valAttrs := makeValidatorAttributes(he.Validators())
+	attrs := makeAttributes(4, valAttrs, false)
+	attrs = append(attrs,
+		htmls.Attribute{Key: "id", Value: fieldID},
+		htmls.Attribute{Key: "name", Value: he.name},
+		htmls.Attribute{Key: "type", Value: "hidden"},
+		htmls.Attribute{Key: "value", Value: he.value},
+	)
+	return htmls.Elem("input", attrs)
+}
+
 // ----- <textarea ...>...</textarea> field
 
 // TextAreaElement represents the corresponding textarea form element.

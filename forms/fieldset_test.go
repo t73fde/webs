@@ -39,3 +39,15 @@ func TestBasicFieldset(t *testing.T) {
 		t.Errorf("\nexpected: %q\nbut got:  %q", exp, got)
 	}
 }
+
+func TestHiddenField(t *testing.T) {
+	f := forms.Define(forms.HiddenField("secret"))
+	if ok := f.SetData(forms.Data{"secret": "psst"}); !ok {
+		t.Error("unable to set data:", f.Messages())
+		return
+	}
+	exp := "<form action=\"\" method=\"POST\"><input id=\"secret\" name=\"secret\" type=\"hidden\" value=\"psst\"></form>"
+	if got := renderForm(f); got != exp {
+		t.Errorf("\nexpected: %q\nbut got:  %q", exp, got)
+	}
+}
