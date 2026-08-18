@@ -33,6 +33,7 @@ type Form struct {
 	fields      []Field
 	fieldnames  map[string]Field
 	messages    Messages
+	disabled    bool
 }
 
 // Define builds a new form.
@@ -42,6 +43,7 @@ func Define(fields ...Field) *Form {
 		maxFormSize: (10 << 20), // 10 MB
 		fields:      fields,
 		fieldnames:  make(map[string]Field, len(fields)),
+		disabled:    false,
 	}
 	for _, field := range fields {
 		f.addName(field)
@@ -96,6 +98,7 @@ func (f *Form) Clear() {
 
 // Disable the form.
 func (f *Form) Disable() *Form {
+	f.disabled = true
 	for _, field := range f.fields {
 		field.Disable()
 	}
@@ -192,7 +195,7 @@ func (f *Form) ValidRequestForm(r *http.Request) bool {
 // validates that data. It returns a result, depending on the request, plus
 // the name of the submit field, which causes the request.
 func (f *Form) OnSubmit(r *http.Request) (SubmitResult, string) {
-	if r.Method != http.MethodPost {
+	if f.disabled || r.Method != http.MethodPost {
 		return SubmitNoData, ""
 	}
 	if err := f.parseForm(r); err != nil {
@@ -262,7 +265,7 @@ func (f *Form) parseForm(r *http.Request) (err error) {
 	return r.ParseForm()
 }
 
-// IsValid returns true if the form has been successfully validates.
+// IsValid returns true if the form successfully validates.
 func (f *Form) IsValid() bool {
 	var messages Messages
 	for _, field := range f.fields {
