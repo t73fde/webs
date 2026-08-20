@@ -11,7 +11,6 @@
 // SPDX-FileCopyrightText: 2023-present Detlef Stern
 // -----------------------------------------------------------------------------
 
-// Package forms handles HTML form data.
 package forms
 
 import (
