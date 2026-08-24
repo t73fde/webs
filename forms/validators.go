@@ -256,29 +256,38 @@ func (so setOf) Check(_ *Form, field Field) error {
 
 // ----- StringXXX: field must have a value that compares to a specific constant.
 
+// Operation values
+const (
+	opLess         = -2
+	opLessEqual    = -1
+	opEqual        = 0
+	opGreaterEqual = 1
+	opGreater      = 2
+)
+
 // StringLess performs a string comparison with the given field.
 func StringLess(value string, msg string) Validator {
-	return &stringCompare{value: value, op: -2, message: msg}
+	return &stringCompare{value: value, op: opLess, message: msg}
 }
 
 // StringLessEqual performs a string comparison with the given field.
 func StringLessEqual(value string, msg string) Validator {
-	return &stringCompare{value: value, op: -1, message: msg}
+	return &stringCompare{value: value, op: opLessEqual, message: msg}
 }
 
 // StringEqual performs a string comparison with the given field.
 func StringEqual(value string, msg string) Validator {
-	return &stringCompare{value: value, op: 0, message: msg}
+	return &stringCompare{value: value, op: opEqual, message: msg}
 }
 
 // StringGreaterEqual performs a string comparison with the given field.
 func StringGreaterEqual(value string, msg string) Validator {
-	return &stringCompare{value: value, op: 1, message: msg}
+	return &stringCompare{value: value, op: opGreaterEqual, message: msg}
 }
 
 // StringGreater performs a string comparison with the given field.
 func StringGreater(value string, msg string) Validator {
-	return &stringCompare{value: value, op: 2, message: msg}
+	return &stringCompare{value: value, op: opGreater, message: msg}
 }
 
 // stringCompare validates that the current field by comparing with the given one.
@@ -296,27 +305,27 @@ func (fsc *stringCompare) Check(_ *Form, field Field) error {
 func compareStringValues(op int, value, other string, msg string) error {
 	var msgOp string
 	switch op {
-	case -2:
+	case opLess:
 		if value < other {
 			return nil
 		}
 		msgOp = "≥"
-	case -1:
+	case opLessEqual:
 		if value <= other {
 			return nil
 		}
 		msgOp = ">"
-	case 0:
+	case opEqual:
 		if value == other {
 			return nil
 		}
 		msgOp = "≠"
-	case 1:
+	case opGreaterEqual:
 		if value >= other {
 			return nil
 		}
 		msgOp = "<"
-	case 2:
+	case opGreater:
 		if value > other {
 			return nil
 		}
@@ -335,27 +344,27 @@ func compareStringValues(op int, value, other string, msg string) error {
 
 // FieldStringLess performs a string comparison with the given field.
 func FieldStringLess(name string, msg string) Validator {
-	return &fieldStringCompare{fieldname: name, op: -2, message: msg}
+	return &fieldStringCompare{fieldname: name, op: opLess, message: msg}
 }
 
 // FieldStringLessEqual performs a string comparison with the given field.
 func FieldStringLessEqual(name string, msg string) Validator {
-	return &fieldStringCompare{fieldname: name, op: -1, message: msg}
+	return &fieldStringCompare{fieldname: name, op: opLessEqual, message: msg}
 }
 
 // FieldStringEqual performs a string comparison with the given field.
 func FieldStringEqual(name string, msg string) Validator {
-	return &fieldStringCompare{fieldname: name, op: 0, message: msg}
+	return &fieldStringCompare{fieldname: name, op: opEqual, message: msg}
 }
 
 // FieldStringGreaterEqual performs a string comparison with the given field.
 func FieldStringGreaterEqual(name string, msg string) Validator {
-	return &fieldStringCompare{fieldname: name, op: 1, message: msg}
+	return &fieldStringCompare{fieldname: name, op: opGreaterEqual, message: msg}
 }
 
 // FieldStringGreater performs a string comparison with the given field.
 func FieldStringGreater(name string, msg string) Validator {
-	return &fieldStringCompare{fieldname: name, op: 2, message: msg}
+	return &fieldStringCompare{fieldname: name, op: opGreater, message: msg}
 }
 
 // fieldStringCompare validates that the current field by comparing with the given one.
