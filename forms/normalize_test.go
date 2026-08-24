@@ -19,13 +19,13 @@ import (
 	"t73f.de/r/webs/forms"
 )
 
-func TestTrimAction(t *testing.T) {
+func TestTrimNormalizer(t *testing.T) {
 	fld := forms.TextAreaField("name", "label")
 	if err := fld.SetValue("\tbla  fasel\n "); err != nil {
 		t.Error("SetValue", err)
 		return
 	}
-	trim := forms.TrimAction{}
+	trim := forms.TrimNormalizer{}
 	if err := trim.Check(nil, fld); err != nil {
 		t.Error("Check", err)
 		return

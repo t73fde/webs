@@ -15,12 +15,13 @@ package forms
 
 import "strings"
 
-// Actions are technically validators. They are used to modify field values.
+// ActNormalizersions are technically validators.
+// They are used to modify field values.
 
-// TrimAction removes all leading and trailing white space.
-type TrimAction struct{}
+// TrimNormalizer removes all leading and trailing white space.
+type TrimNormalizer struct{}
 
 // Check will trim the given field.
-func (TrimAction) Check(_ *Form, fld Field) error {
+func (TrimNormalizer) Check(_ *Form, fld Field) error {
 	return fld.SetValue(strings.TrimSpace(fld.Value()))
 }
