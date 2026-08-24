@@ -258,6 +258,7 @@ func (so setOf) Check(_ *Form, field Field) error {
 
 // Operation values
 const (
+	opNotEqual     = -128
 	opLess         = -2
 	opLessEqual    = -1
 	opEqual        = 0
@@ -278,6 +279,11 @@ func StringLessEqual(value string, msg string) Validator {
 // StringEqual performs a string comparison with the given field.
 func StringEqual(value string, msg string) Validator {
 	return &stringCompare{value: value, op: opEqual, message: msg}
+}
+
+// StringNotEqual performs a string comparison with the given field.
+func StringNotEqual(value string, msg string) Validator {
+	return &stringCompare{value: value, op: opNotEqual, message: msg}
 }
 
 // StringGreaterEqual performs a string comparison with the given field.
@@ -320,6 +326,11 @@ func compareStringValues(op int, value, other string, msg string) error {
 			return nil
 		}
 		msgOp = "≠"
+	case opNotEqual:
+		if value != other {
+			return nil
+		}
+		msgOp = "="
 	case opGreaterEqual:
 		if value >= other {
 			return nil
@@ -355,6 +366,11 @@ func FieldStringLessEqual(name string, msg string) Validator {
 // FieldStringEqual performs a string comparison with the given field.
 func FieldStringEqual(name string, msg string) Validator {
 	return &fieldStringCompare{fieldname: name, op: opEqual, message: msg}
+}
+
+// FieldStringNotEqual performs a string comparison with the given field.
+func FieldStringNotEqual(name string, msg string) Validator {
+	return &fieldStringCompare{fieldname: name, op: opNotEqual, message: msg}
 }
 
 // FieldStringGreaterEqual performs a string comparison with the given field.
