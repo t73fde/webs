@@ -131,7 +131,12 @@ func (m Messages) Add(fieldName, message string) Messages {
 }
 
 // Fields return the sequence of fields.
-func (f *Form) Fields() []Field { return f.fields }
+func (f *Form) Fields() []Field {
+	if f == nil {
+		return nil
+	}
+	return f.fields
+}
 
 // Data returns the map of field names to values.
 func (f *Form) Data() Data {
