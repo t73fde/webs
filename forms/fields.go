@@ -15,6 +15,7 @@ package forms
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -52,30 +53,26 @@ func SubmitField(name, label string) *SubmitElement {
 	}
 }
 
-// SetPriority sets the importance of the field. Only the values 0, 1, 2, and 3
-// are allowed, with 0 being the highest priority.
+// SetPriority sets the importance of the field. All uint8 values are allowed,
+// 0 being the highest priority and 255 being the cancel action.
 func (se *SubmitElement) SetPriority(prio uint8) *SubmitElement {
-	se.prio = min(prio, uint8(len(submitPrioClass)-1))
-	return se
-}
-
-var submitPrioClass = map[uint8]string{
-	0: "primary",
-	1: "secondary",
-	2: "tertiary",
-	3: "cancel", // must always be the last, see se.SetCancel()
-}
-
-// NoFormValidate marks the submit field as an action that disables form
-// validation, if this field causes the form to be sent.
-func (se *SubmitElement) NoFormValidate() *SubmitElement {
-	se.noFormValidate = true
+	se.prio = prio
+	if prio == math.MaxUint8 {
+		se.noFormValidate = true
+	}
 	return se
 }
 
 // SetCancel marks the submit field to work as as a cancel button.
 func (se *SubmitElement) SetCancel() *SubmitElement {
-	se.prio = uint8(len(submitPrioClass) - 1)
+	se.prio = math.MaxUint8
+	se.noFormValidate = true
+	return se
+}
+
+// NoFormValidate marks the submit field as an action that disables form
+// validation, if this field causes the form to be sent.
+func (se *SubmitElement) NoFormValidate() *SubmitElement {
 	se.noFormValidate = true
 	return se
 }
@@ -107,11 +104,26 @@ func (se *SubmitElement) Render(fieldID string, _ []string) *htmls.Node {
 		htmls.Attribute{Key: "name", Value: se.name},
 		htmls.Attribute{Key: "type", Value: "submit"},
 		htmls.Attribute{Key: "value", Value: se.label},
-		htmls.Attribute{Key: "class", Value: submitPrioClass[se.prio]},
+		htmls.Attribute{Key: "class", Value: se.classVal()},
 	)
 	attrs = addEnablingAttributes(attrs, se.disabled, valAttrs)
 	attrs = addBoolAttribute(attrs, "formnovalidate", se.noFormValidate)
 	return htmls.Elem("input", attrs)
+}
+
+func (se *SubmitElement) classVal() string {
+	switch se.prio {
+	case 0:
+		return "primary"
+	case 1:
+		return "secondary"
+	case 2:
+		return "tertiary"
+	case math.MaxUint8:
+		return "cancel"
+	default:
+		return "level-" + strconv.FormatUint(uint64(se.prio), 10)
+	}
 }
 
 // ----- Checkbox field

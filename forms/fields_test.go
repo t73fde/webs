@@ -14,10 +14,12 @@
 package forms_test
 
 import (
+	"strings"
 	"testing"
 
 	"t73f.de/r/webs/forms"
 	"t73f.de/r/webs/htmls"
+	"t73f.de/r/webs/htmls/render"
 )
 
 func TestFlowContent(t *testing.T) {
@@ -26,5 +28,40 @@ func TestFlowContent(t *testing.T) {
 	exp := "<form action=\"\" method=\"POST\"><p>Test</p></form>"
 	if got := renderForm(form); got != exp {
 		t.Errorf("expected: %q, but got: %q", exp, got)
+	}
+}
+
+func TestSubmitElement(t *testing.T) {
+	se := forms.SubmitField("Edit", "edit")
+	var sb strings.Builder
+	if err := render.Render(&sb, se.Render("se", nil)); err != nil {
+		t.Error(err)
+		return
+	}
+	exp := "<input id=\"se\" name=\"Edit\" type=\"submit\" value=\"edit\" class=\"primary\">"
+	if got := sb.String(); got != exp {
+		t.Errorf("render should be %q, but got %q", exp, got)
+	}
+
+	se.SetPriority(17)
+	sb.Reset()
+	if err := render.Render(&sb, se.Render("se", nil)); err != nil {
+		t.Error(err)
+		return
+	}
+	exp = "<input id=\"se\" name=\"Edit\" type=\"submit\" value=\"edit\" class=\"level-17\">"
+	if got := sb.String(); got != exp {
+		t.Errorf("render should be %q, but got %q", exp, got)
+	}
+
+	se.SetCancel()
+	sb.Reset()
+	if err := render.Render(&sb, se.Render("se", nil)); err != nil {
+		t.Error(err)
+		return
+	}
+	exp = "<input id=\"se\" name=\"Edit\" type=\"submit\" value=\"edit\" class=\"cancel\" formnovalidate=\"\">"
+	if got := sb.String(); got != exp {
+		t.Errorf("render should be %q, but got %q", exp, got)
 	}
 }
