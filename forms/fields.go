@@ -122,7 +122,7 @@ func (se *SubmitElement) classVal() string {
 	case math.MaxUint8:
 		return "cancel"
 	default:
-		return "level-" + strconv.FormatUint(uint64(se.prio), 10)
+		return "level-" + strconv.FormatUint(uint64(se.prio)+1, 10)
 	}
 }
 

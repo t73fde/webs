@@ -49,7 +49,7 @@ func TestSubmitElement(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	exp = "<input id=\"se\" name=\"Edit\" type=\"submit\" value=\"edit\" class=\"level-17\">"
+	exp = "<input id=\"se\" name=\"Edit\" type=\"submit\" value=\"edit\" class=\"level-18\">"
 	if got := sb.String(); got != exp {
 		t.Errorf("render should be %q, but got %q", exp, got)
 	}
