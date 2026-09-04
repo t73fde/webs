@@ -14,6 +14,7 @@
 package forms
 
 import (
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -40,11 +41,21 @@ func DatetimeValue(t time.Time) string {
 	return t.Local().Format(htmlDatetimeLayout)
 }
 
+// SignedInt is the super-type of all signed integers.
+type SignedInt interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+// UnsignedInt is the super-type of all unsigned integers.
+type UnsignedInt interface {
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
 // IntValue returns the value as a string to be stored in a field.
-func IntValue(i int) string { return strconv.Itoa(i) }
+func IntValue[T SignedInt](i T) string { return strconv.FormatInt(int64(i), 10) }
 
 // UintValue returns the value as a string to be stored in a field.
-func UintValue(i uint64) string { return strconv.FormatUint(i, 10) }
+func UintValue[T UnsignedInt](i T) string { return strconv.FormatUint(uint64(i), 10) }
 
 // CheckboxValue returns a value for a checkbox.
 // The value should be the name for the [CheckboxField].
@@ -95,11 +106,12 @@ func (d Data) GetDatetime(fieldName string) time.Time {
 }
 
 // GetInt returns the value of the given field as an int.
-func (d Data) GetInt(fieldName string, defaultValue int) int {
+func (d Data) GetInt[T SignedInt](fieldName string, defaultValue T) T {
 	if len(d) > 0 {
 		if value, found := d[fieldName]; found {
-			if result, err := strconv.Atoi(value); err == nil {
-				return result
+			bits := reflect.TypeOf(defaultValue).Bits()
+			if result, err := strconv.ParseInt(value, 10, bits); err == nil {
+				return T(result)
 			}
 		}
 	}
@@ -107,11 +119,12 @@ func (d Data) GetInt(fieldName string, defaultValue int) int {
 }
 
 // GetUint returns the value of the given field as a number.
-func (d Data) GetUint(fieldName string, defaultValue uint64) uint64 {
+func (d Data) GetUint[T UnsignedInt](fieldName string, defaultValue T) T {
 	if len(d) > 0 {
 		if value, found := d[fieldName]; found {
-			if result, err := strconv.ParseUint(value, 10, 64); err == nil {
-				return result
+			bits := reflect.TypeOf(defaultValue).Bits()
+			if result, err := strconv.ParseUint(value, 10, bits); err == nil {
+				return T(result)
 			}
 		}
 	}
