@@ -19,8 +19,8 @@ import (
 
 // Fieldset represents an HTML <fieldset>
 type Fieldset struct {
+	NamedElement
 	form     *Form
-	name     string
 	legend   string
 	fields   []Field
 	disabled bool
@@ -43,9 +43,6 @@ func FieldsetField(name, legend string, fields ...Field) *Fieldset {
 		disabled: false,
 	}
 }
-
-// Name the Fieldset.
-func (fs *Fieldset) Name() string { return fs.name }
 
 // Value returns the value of the Fieldset: there is no value.
 func (Fieldset) Value() string { return "" }

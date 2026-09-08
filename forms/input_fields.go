@@ -23,12 +23,9 @@ import (
 
 // InputElement represents a HTTP <input> field.
 type InputElement struct {
-	name       string
-	label      string
-	value      string
-	validators Validators
-	disabled   bool
-	itype      inputType
+	BaseValidatedElement
+	value string
+	itype inputType
 }
 
 type inputType uint
@@ -44,9 +41,6 @@ const (
 	itypePassword
 	itypeText
 )
-
-// Name returns the name of this element.
-func (fd *InputElement) Name() string { return fd.name }
 
 // Value returns the value of the input element.
 func (fd *InputElement) Value() string { return fd.value }
@@ -69,17 +63,6 @@ func (fd *InputElement) SetValue(value string) (err error) {
 	}
 	return err
 }
-
-// Validators returns all currently active Validators.
-func (fd *InputElement) Validators() Validators {
-	if fd.disabled {
-		return nil
-	}
-	return fd.validators
-}
-
-// Disable the input element.
-func (fd *InputElement) Disable() { fd.disabled = true }
 
 // Render the form input element as SxHTML.
 func (fd *InputElement) Render(fieldID string, messages []string) *htmls.Node {

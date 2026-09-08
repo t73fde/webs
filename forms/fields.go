@@ -33,15 +33,46 @@ type Field interface {
 	Render(string, []string) *htmls.Node
 }
 
+// NamedElement stores the name of an element and provides access to it.
+type NamedElement struct {
+	name string
+}
+
+// Name returns the name of this element.
+func (ne *NamedElement) Name() string { return ne.name }
+
+// BaseElement stores data needed for all element, e.g. name, label, disabled.
+type BaseElement struct {
+	NamedElement
+	label    string
+	disabled bool
+}
+
+// Disable the submit element.
+func (be *BaseElement) Disable() { be.disabled = true }
+
+// BaseValidatedElement stores data for a Baseelement, and manages a list
+// of Validators.
+type BaseValidatedElement struct {
+	BaseElement
+	validators Validators
+}
+
+// Validators returns the currently active validators for this text area.
+func (bve *BaseValidatedElement) Validators() Validators {
+	if bve.disabled {
+		return nil
+	}
+	return bve.validators
+}
+
 // ----- Submit input element
 
 // SubmitElement represents an element <input type="submit" ...>
 type SubmitElement struct {
-	name           string
-	label          string
+	BaseElement
 	value          string
 	prio           uint8
-	disabled       bool
 	noFormValidate bool
 }
 
@@ -77,9 +108,6 @@ func (se *SubmitElement) NoFormValidate() *SubmitElement {
 	return se
 }
 
-// Name returns the name of this element.
-func (se *SubmitElement) Name() string { return se.name }
-
 // Value returns the value of this element.
 func (se *SubmitElement) Value() string { return se.value }
 
@@ -91,9 +119,6 @@ func (se *SubmitElement) SetValue(value string) error { se.value = value; return
 
 // Validators return the currently active validators.
 func (se *SubmitElement) Validators() Validators { return nil }
-
-// Disable the submit element.
-func (se *SubmitElement) Disable() { se.disabled = true }
 
 // Render the submit element as SxHTML.
 func (se *SubmitElement) Render(fieldID string, _ []string) *htmls.Node {
@@ -130,10 +155,8 @@ func (se *SubmitElement) classVal() string {
 
 // CheckboxElement represents a checkbox.
 type CheckboxElement struct {
-	name     string
-	label    string
-	value    string
-	disabled bool
+	BaseElement
+	value string
 }
 
 // CheckboxField provides a checkbox.
@@ -143,9 +166,6 @@ func CheckboxField(name, label string) *CheckboxElement {
 		label: label,
 	}
 }
-
-// Name returns the name of this element.
-func (cbe *CheckboxElement) Name() string { return cbe.name }
 
 // Value returns the value of this element.
 func (cbe *CheckboxElement) Value() string { return cbe.value }
@@ -167,9 +187,6 @@ func (cbe *CheckboxElement) SetChecked(val bool) {
 
 // Validators return the currently active validators.
 func (cbe *CheckboxElement) Validators() Validators { return nil }
-
-// Disable the checkbox element.
-func (cbe *CheckboxElement) Disable() { cbe.disabled = true }
 
 // Render the checkbox element.
 func (cbe *CheckboxElement) Render(fieldID string, _ []string) *htmls.Node {
@@ -194,7 +211,7 @@ func (cbe *CheckboxElement) Render(fieldID string, _ []string) *htmls.Node {
 
 // HiddenElement represents some hidden data.
 type HiddenElement struct {
-	name  string
+	NamedElement
 	value string
 }
 
@@ -202,9 +219,6 @@ type HiddenElement struct {
 func HiddenField(name string) *HiddenElement {
 	return &HiddenElement{name: name}
 }
-
-// Name returns the name of this element.
-func (he *HiddenElement) Name() string { return he.name }
 
 // Value returns the value of this element.
 func (he *HiddenElement) Value() string { return he.value }
@@ -238,13 +252,10 @@ func (he *HiddenElement) Render(fieldID string, _ []string) *htmls.Node {
 
 // TextAreaElement represents the corresponding textarea form element.
 type TextAreaElement struct {
-	name       string
-	label      string
-	rows       uint32
-	cols       uint32
-	value      string
-	validators Validators
-	disabled   bool
+	BaseValidatedElement
+	rows  uint32
+	cols  uint32
+	value string
 }
 
 // TextAreaField creates a new text area element.
@@ -269,9 +280,6 @@ func (tae *TextAreaElement) SetCols(cols uint32) *TextAreaElement {
 	return tae
 }
 
-// Name returns the name of the text area element.
-func (tae *TextAreaElement) Name() string { return tae.name }
-
 // Value returns the value of the text area.
 func (tae *TextAreaElement) Value() string { return tae.value }
 
@@ -283,17 +291,6 @@ func (tae *TextAreaElement) SetValue(value string) error {
 	tae.value = strings.ReplaceAll(value, "\r\n", "\n") // Unify Windows/Unix EOL handling
 	return nil
 }
-
-// Validators returns the currently active validators for this text area.
-func (tae *TextAreaElement) Validators() Validators {
-	if tae.disabled {
-		return nil
-	}
-	return tae.validators
-}
-
-// Disable the text area element.
-func (tae *TextAreaElement) Disable() { tae.disabled = true }
 
 // Render the text area.
 func (tae *TextAreaElement) Render(fieldID string, messages []string) *htmls.Node {
@@ -324,12 +321,9 @@ func (tae *TextAreaElement) Render(fieldID string, messages []string) *htmls.Nod
 
 // SelectElement represents the corresponding select form element.
 type SelectElement struct {
-	name       string
-	label      string
-	choices    []string
-	value      string
-	validators Validators
-	disabled   bool
+	BaseValidatedElement
+	choices []string
+	value   string
 }
 
 // SelectField creates a new select element.
@@ -356,9 +350,6 @@ func (se *SelectElement) SetChoices(choices []string) {
 	}
 }
 
-// Name returns the element name.
-func (se *SelectElement) Name() string { return se.name }
-
 // Value returns the value of the select element.
 func (se *SelectElement) Value() string { return se.value }
 
@@ -375,17 +366,6 @@ func (se *SelectElement) SetValue(value string) error {
 	}
 	return fmt.Errorf("no such choice: %q", value)
 }
-
-// Validators return the active validators for the select element.
-func (se *SelectElement) Validators() Validators {
-	if se.disabled {
-		return nil
-	}
-	return se.validators
-}
-
-// Disable the field.
-func (se *SelectElement) Disable() { se.disabled = true }
 
 // Render the select element.
 func (se *SelectElement) Render(fieldID string, messages []string) *htmls.Node {
@@ -430,7 +410,7 @@ func EnsureEmptyChoice(choices []string) []string {
 
 // FlowContentElement adds some flow content to the form.
 type FlowContentElement struct {
-	name    string
+	NamedElement
 	content *htmls.Node
 }
 
@@ -438,9 +418,6 @@ type FlowContentElement struct {
 func FlowContentField(name string, content *htmls.Node) *FlowContentElement {
 	return &FlowContentElement{name: name, content: content}
 }
-
-// Name returns the element name.
-func (fce *FlowContentElement) Name() string { return fce.name }
 
 // Value returns the value of the select element.
 func (*FlowContentElement) Value() string { return "" }
