@@ -19,11 +19,10 @@ import (
 
 // Fieldset represents an HTML <fieldset>
 type Fieldset struct {
-	NamedElement
-	form     *Form
-	legend   string
-	fields   []Field
-	disabled bool
+	BaseElement
+	form   *Form
+	legend string
+	fields []Field
 }
 
 func (fs *Fieldset) setForm(f *Form) {
@@ -36,11 +35,10 @@ func (fs *Fieldset) setForm(f *Form) {
 // FieldsetField builds a Fieldset.
 func FieldsetField(name, legend string, fields ...Field) *Fieldset {
 	return &Fieldset{
-		form:     nil,
-		name:     name,
-		legend:   legend,
-		fields:   fields,
-		disabled: false,
+		form:   nil,
+		name:   name,
+		legend: legend,
+		fields: fields,
 	}
 }
 
@@ -62,6 +60,7 @@ func (Fieldset) Validators() Validators { return nil }
 
 // Disable the Fieldset.
 func (fs *Fieldset) Disable() {
+	fs.disabled = true
 	for _, f := range fs.fields {
 		f.Disable()
 	}

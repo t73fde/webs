@@ -33,22 +33,17 @@ type Field interface {
 	Render(string, []string) *htmls.Node
 }
 
-// NamedElement stores the name of an element and provides access to it.
-type NamedElement struct {
-	name string
-}
-
-// Name returns the name of this element.
-func (ne *NamedElement) Name() string { return ne.name }
-
-// BaseElement stores data needed for all element, e.g. name, label, disabled.
+// BaseElement stores the name and activation status of an element and
+// provides access to these fields.
 type BaseElement struct {
-	NamedElement
-	label    string
+	name     string
 	disabled bool
 }
 
-// Disable the submit element.
+// Name returns the name of this element.
+func (be *BaseElement) Name() string { return be.name }
+
+// Disable the element.
 func (be *BaseElement) Disable() { be.disabled = true }
 
 // BaseValidatedElement stores data for a Baseelement, and manages a list
@@ -71,6 +66,7 @@ func (bve *BaseValidatedElement) Validators() Validators {
 // SubmitElement represents an element <input type="submit" ...>
 type SubmitElement struct {
 	BaseElement
+	label          string
 	value          string
 	prio           uint8
 	noFormValidate bool
@@ -156,6 +152,7 @@ func (se *SubmitElement) classVal() string {
 // CheckboxElement represents a checkbox.
 type CheckboxElement struct {
 	BaseElement
+	label string
 	value string
 }
 
@@ -211,7 +208,7 @@ func (cbe *CheckboxElement) Render(fieldID string, _ []string) *htmls.Node {
 
 // HiddenElement represents some hidden data.
 type HiddenElement struct {
-	NamedElement
+	BaseElement
 	value string
 }
 
@@ -232,9 +229,6 @@ func (he *HiddenElement) SetValue(value string) error { he.value = value; return
 // Validators return the currently active validators.
 func (he *HiddenElement) Validators() Validators { return nil }
 
-// Disable the hidden element.
-func (he *HiddenElement) Disable() {}
-
 // Render the hidden element.
 func (he *HiddenElement) Render(fieldID string, _ []string) *htmls.Node {
 	valAttrs := makeValidatorAttributes(he.Validators())
@@ -253,6 +247,7 @@ func (he *HiddenElement) Render(fieldID string, _ []string) *htmls.Node {
 // TextAreaElement represents the corresponding textarea form element.
 type TextAreaElement struct {
 	BaseValidatedElement
+	label string
 	rows  uint32
 	cols  uint32
 	value string
@@ -322,6 +317,7 @@ func (tae *TextAreaElement) Render(fieldID string, messages []string) *htmls.Nod
 // SelectElement represents the corresponding select form element.
 type SelectElement struct {
 	BaseValidatedElement
+	label   string
 	choices []string
 	value   string
 }
@@ -410,7 +406,7 @@ func EnsureEmptyChoice(choices []string) []string {
 
 // FlowContentElement adds some flow content to the form.
 type FlowContentElement struct {
-	NamedElement
+	BaseElement
 	content *htmls.Node
 }
 
@@ -432,9 +428,6 @@ func (*FlowContentElement) SetValue(string) error {
 
 // Validators return the active validators for the select element.
 func (*FlowContentElement) Validators() Validators { return nil }
-
-// Disable the field.
-func (*FlowContentElement) Disable() {}
 
 // Render the flow content element.
 func (fce *FlowContentElement) Render(string, []string) *htmls.Node {

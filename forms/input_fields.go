@@ -24,6 +24,7 @@ import (
 // InputElement represents a HTTP <input> field.
 type InputElement struct {
 	BaseValidatedElement
+	label string
 	value string
 	itype inputType
 }
