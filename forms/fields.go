@@ -30,6 +30,7 @@ type Field interface {
 	SetValue(string) error
 	Validators() Validators
 	Disable()
+	IsDisabled() bool
 	Render(string, []string) *htmls.Node
 }
 
@@ -45,6 +46,12 @@ func (be *BaseElement) Name() string { return be.name }
 
 // Disable the element.
 func (be *BaseElement) Disable() { be.disabled = true }
+
+// IsDisabled returns true if the field is disabled.
+//
+// All fields must be able to be disabled, even the field is not shown.
+// If all fields are disabled, form processing will not take place.
+func (be *BaseElement) IsDisabled() bool { return be.disabled }
 
 // BaseValidatedElement stores data for a Baseelement, and manages a list
 // of Validators.

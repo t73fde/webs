@@ -13,9 +13,7 @@
 
 package forms
 
-import (
-	"t73f.de/r/webs/htmls"
-)
+import "t73f.de/r/webs/htmls"
 
 // Fieldset represents an HTML <fieldset>
 type Fieldset struct {
@@ -65,6 +63,9 @@ func (fs *Fieldset) Disable() {
 		f.Disable()
 	}
 }
+
+// IsDisabled returns true if the field is disabled.
+func (fs *Fieldset) IsDisabled() bool { return fs.disabled && fieldsDisabled(fs.fields) }
 
 // Render the Fieldset.
 func (fs *Fieldset) Render(fieldID string, messages []string) *htmls.Node {

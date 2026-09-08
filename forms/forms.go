@@ -33,7 +33,6 @@ type Form struct {
 	fields      []Field
 	fieldnames  map[string]Field
 	messages    Messages
-	disabled    bool
 }
 
 // Define builds a new form.
@@ -43,7 +42,6 @@ func Define(fields ...Field) *Form {
 		maxFormSize: (10 << 20), // 10 MB
 		fields:      fields,
 		fieldnames:  make(map[string]Field, len(fields)),
-		disabled:    false,
 	}
 	for _, field := range fields {
 		f.addName(field)
@@ -98,12 +96,14 @@ func (f *Form) Clear() {
 
 // Disable the form.
 func (f *Form) Disable() *Form {
-	f.disabled = true
 	for _, field := range f.fields {
 		field.Disable()
 	}
 	return f
 }
+
+// IsDisabled returns true if all fields of the form are disabled.
+func (f *Form) IsDisabled() bool { return fieldsDisabled(f.fields) }
 
 // DisableFields by given field name.
 func (f *Form) DisableFields(names ...string) *Form {
@@ -200,7 +200,7 @@ func (f *Form) ValidRequestForm(r *http.Request) bool {
 // validates that data. It returns a result, depending on the request, plus
 // the name of the submit field, which causes the request.
 func (f *Form) OnSubmit(r *http.Request) (SubmitResult, string) {
-	if f.disabled || r.Method != http.MethodPost {
+	if r.Method != http.MethodPost || fieldsDisabled(f.fields) {
 		return SubmitNoData, ""
 	}
 	if err := f.parseForm(r); err != nil {
@@ -230,6 +230,14 @@ func (f *Form) OnSubmit(r *http.Request) (SubmitResult, string) {
 		return SubmitValidData, submitName
 	}
 	return SubmitInvalidData, submitName
+}
+func fieldsDisabled(fields []Field) bool {
+	for _, fld := range fields {
+		if !fld.IsDisabled() {
+			return false
+		}
+	}
+	return true
 }
 
 // SubmitResult encodes the possible outcomes of a form submit.
