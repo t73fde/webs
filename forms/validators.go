@@ -237,7 +237,7 @@ func AnyOf(values ...string) Validator { return setOf{set.New(values...), false}
 func NoneOf(values ...string) Validator { return setOf{set.New(values...), true} }
 
 type setOf struct {
-	Set    *set.Set[string]
+	Set    set.Set[string]
 	IsNone bool
 }
 
@@ -249,7 +249,7 @@ func (so setOf) Check(_ *Form, field Field) error {
 	if so.IsNone {
 		return ValidationError(fmt.Sprintf("%s contains an invalid value: %v", field.Name(), val))
 	}
-	validElements := slices.Collect(so.Set.All())
+	validElements := slices.Collect(so.Set.Values())
 	slices.Sort(validElements)
 	return ValidationError(fmt.Sprintf("%s does not contain any valid input: %v (expected one of %v)", field.Name(), val, validElements))
 }
