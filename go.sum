@@ -1,4 +1,4 @@
-golang.org/x/text v0.43.0 h1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=
-golang.org/x/text v0.43.0/go.mod h1:hbSIYA/amXcRXTFSZqh8tWHEoqRvvbKPJ2uz/KU+a+s=
-t73f.de/r/zero v0.0.0-20261018155813-dddc26c83bcb h1:/bPZOatDvcMzwUOPCcrKwnPkAc57eOrhf1sIBs0CPAY=
-t73f.de/r/zero v0.0.0-20261018155813-dddc26c83bcb/go.mod h1:EjAVZwarIao68mUIohDFnLespWOwVksdM50+Z9iKZi4=
+golang.org/x/text v0.44.0 h1:YItdp/mQNGnsmrgpcdA5yQ3bnRxCfo/Tj/iByGW9GGo=
+golang.org/x/text v0.44.0/go.mod h1:S4FR1waQ9LbjQTls97SyRjDaUUVkaM+cXwwuG/G+MwY=
+t73f.de/r/zero v0.0.0-20261028180511-40cfc8cbcb58 h1:quNoMnq1SQg0K/0SLJE0Yf+PCjvA1bIinIYmjbxg5LE=
+t73f.de/r/zero v0.0.0-20261028180511-40cfc8cbcb58/go.mod h1:EjAVZwarIao68mUIohDFnLespWOwVksdM50+Z9iKZi4=
