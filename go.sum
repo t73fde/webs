@@ -1,4 +1,4 @@
 golang.org/x/text v0.44.0 h1:YItdp/mQNGnsmrgpcdA5yQ3bnRxCfo/Tj/iByGW9GGo=
 golang.org/x/text v0.44.0/go.mod h1:S4FR1waQ9LbjQTls97SyRjDaUUVkaM+cXwwuG/G+MwY=
-t73f.de/r/zero v0.0.0-20261028180511-40cfc8cbcb58 h1:quNoMnq1SQg0K/0SLJE0Yf+PCjvA1bIinIYmjbxg5LE=
-t73f.de/r/zero v0.0.0-20261028180511-40cfc8cbcb58/go.mod h1:EjAVZwarIao68mUIohDFnLespWOwVksdM50+Z9iKZi4=
+t73f.de/r/zero v0.0.0-20261120142731-89fa49aed03e h1:G7VJHOh5XexfF6AkbFfpO23r/zgN1T+dPr2TH/58E1o=
+t73f.de/r/zero v0.0.0-20261120142731-89fa49aed03e/go.mod h1:ISPyHzfcSmyVVJj1uTfzJW0QVGuuFS456+gT7p2zAsY=
